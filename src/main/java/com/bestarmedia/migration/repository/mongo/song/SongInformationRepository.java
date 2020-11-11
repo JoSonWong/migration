@@ -23,7 +23,6 @@ public class SongInformationRepository {
         return songMongoTemplate.find(new Query(Criteria.where("song_name").is(songName).and("singer.name").in(singers)), SongInformation.class);
     }
 
-
     public SongInformation insert(SongInformation song) {
         return songMongoTemplate.insert(song);
     }

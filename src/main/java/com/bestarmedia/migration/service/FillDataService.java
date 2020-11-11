@@ -266,7 +266,6 @@ public class FillDataService {
                         song.setLyricist(lyricists);
                         song.setComposer(composers);
                         VodSong saveSong = songRepository.update(song);
-
                         System.out.println("保存歌曲到Mongo：" + CommonUtil.OBJECT_MAPPER.writeValueAsString(saveSong));
                     }
                 } catch (Exception e) {

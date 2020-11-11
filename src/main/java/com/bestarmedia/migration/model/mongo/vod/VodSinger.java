@@ -2,6 +2,7 @@ package com.bestarmedia.migration.model.mongo.vod;
 
 import com.bestarmedia.migration.model.mongo.Auditing;
 import com.bestarmedia.migration.model.mongo.CodeName;
+import com.bestarmedia.migration.model.mongo.SearchKeyword;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -16,6 +17,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class VodSinger extends Auditing {
+
     @Field(value = "code")
     private Integer code;//ID
 
@@ -32,7 +34,7 @@ public class VodSinger extends Auditing {
     private Integer wordCount;//字数
 
     @Field(value = "hot")
-    private Integer hot;//热度
+    private Long hot;//热度
 
     @Field(value = "sex")
     private Integer sex;//性别 1 男 2 女  3混合组合
@@ -55,11 +57,7 @@ public class VodSinger extends Auditing {
     @Field(value = "alias")
     private List<String> alias;//别名
 
-    @Field(value = "group")
-    private List<String> group;//组合名
-
-
-
-
+    @Field(value = "search_keywords")
+    private List<SearchKeyword> searchKeywords;//搜索关键字
 
 }

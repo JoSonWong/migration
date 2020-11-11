@@ -1,4 +1,4 @@
-package com.bestarmedia.migration.model.mongo.vod;
+package com.bestarmedia.migration.model.mongo;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -8,10 +8,10 @@ import org.springframework.data.mongodb.core.mapping.Field;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class VodSongVideoFile {
+public class VideoFile {
 
     @Field(value = "code")
-    private String code;//文件id
+    private Integer code;//文件id
 
     @Field(value = "file_name")
     private String fileName;//文件名
@@ -38,13 +38,19 @@ public class VodSongVideoFile {
     private Integer volume;//均衡音量
 
     @Field(value = "score_file_path")
-    private String scoreFilePath;//评分文件地址
+    private String scoreFilePath;//评分文件
+
+    @Field(value = "coordinates_file_path")
+    private String coordinatesFilePath;//评分坐标
 
     @Field(value = "lyric_file_path")
     private String lyricFilePath;//歌词文件地址
 
     @Field(value = "hot")
-    private Integer hot;//点播量
+    private Long hot;//点播量
+
+    @Field(value = "recommend")
+    private Integer recommend;//推荐度
 
     @Field(value = "status")
     private Integer status;//状态

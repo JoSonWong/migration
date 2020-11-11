@@ -1,8 +1,8 @@
 package com.bestarmedia.migration.repository.mongo.vod;
 
+import com.bestarmedia.migration.misc.CommonUtil;
 import com.bestarmedia.migration.model.mongo.CodeName;
 import com.bestarmedia.migration.model.mongo.vod.VodSongVersion;
-import com.bestarmedia.migration.misc.CommonUtil;
 import com.mongodb.client.result.UpdateResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -25,7 +25,6 @@ public class VodSongVersionRepository {
     @Autowired
     @Qualifier(value = "vodMongo")
     private MongoTemplate vodMongoTemplate;
-
 
     public List<VodSongVersion> findVodSongVersion(Integer songCode) {
         return vodMongoTemplate.find(new Query(Criteria.where("song_code").is(songCode).and("versions_type").is(1).and("status").is(1)), VodSongVersion.class);
@@ -82,7 +81,7 @@ public class VodSongVersionRepository {
 //        UpdateResult upsert = vodMongoTemplate.upsert(query, update, "userList");      //有则更新，没有则新增
 //        return upsert.getMatchedCount();       //返回执行的条
 //    }
-    public VodSongVersion update(String code, List<CodeName> litigant, List<CodeName> producer, List<CodeName> publisher, Date issueTime) {
+    public VodSongVersion update(Integer code, List<CodeName> litigant, List<CodeName> producer, List<CodeName> publisher, Date issueTime) {
         Query query = new Query();
         query.addCriteria(Criteria.where("code").is(code));
         Update update = new Update();

@@ -1,6 +1,7 @@
 package com.bestarmedia.migration.model.mongo.song;
 
 import com.bestarmedia.migration.model.mongo.CodeName;
+import com.bestarmedia.migration.model.mongo.SearchKeyword;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -44,7 +45,7 @@ public class SongMusician extends SongAuditing {
     private Date birthday;//生日
 
     @Field(value = "role")
-    private Integer role;//身份 0 歌手 1 组合 2 公司
+    private Integer role;//身份：0歌手 1组合 2公司
 
     @Field(value = "part")
     private CodeName part;//地区
@@ -63,4 +64,7 @@ public class SongMusician extends SongAuditing {
 
     @Field(value = "remark")
     private String remark;//备注
+
+    @Field(value = "search_keywords")
+    private List<SearchKeyword> searchKeywords;//搜索关键字
 }

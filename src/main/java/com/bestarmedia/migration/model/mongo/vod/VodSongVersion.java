@@ -2,6 +2,7 @@ package com.bestarmedia.migration.model.mongo.vod;
 
 import com.bestarmedia.migration.model.mongo.Auditing;
 import com.bestarmedia.migration.model.mongo.CodeName;
+import com.bestarmedia.migration.model.mongo.VideoFile;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -18,8 +19,9 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class VodSongVersion extends Auditing {
+
     @Field(value = "code")
-    private String code;//id
+    private Integer code;//id
 
     @Field(value = "song_code")
     private Integer songCode;//歌曲id
@@ -27,11 +29,14 @@ public class VodSongVersion extends Auditing {
     @Field(value = "song_code_old")
     public Integer songCodeOld;
 
-    @Field(value = "versions_type")
-    private Integer versionsType;//版本类型  2为音画，1为视频
+    @Field(value = "type")
+    private Integer type;//类型  1为视频，2为音画
 
-    @Field(value = "edition_type")
-    private Integer versionNameCode;//版本名id
+    @Field(value = "versions_type")
+    private Integer versionsType;//版本类型 (原mysql视频类型id)
+
+    @Field(value = "versions_name")
+    private String versionsName;//版本标签（原：如MV、现场 等)
 
     @Field(value = "source")
     private String source;//来源
@@ -67,6 +72,6 @@ public class VodSongVersion extends Auditing {
     private Integer status;//状态
 
     @Field(value = "file")
-    private List<VodSongVideoFile> videoFileList;//文件
+    private List<VideoFile> videoFileList;//文件
 
 }

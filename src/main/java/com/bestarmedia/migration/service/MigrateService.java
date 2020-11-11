@@ -4,13 +4,14 @@ package com.bestarmedia.migration.service;
 import com.bestarmedia.migration.misc.CommonUtil;
 import com.bestarmedia.migration.misc.DateUtil;
 import com.bestarmedia.migration.model.mongo.CodeName;
+import com.bestarmedia.migration.model.mongo.SearchKeyword;
+import com.bestarmedia.migration.model.mongo.VideoFile;
 import com.bestarmedia.migration.model.mongo.song.SongInformation;
 import com.bestarmedia.migration.model.mongo.song.SongMusician;
 import com.bestarmedia.migration.model.mongo.song.SongSongVersion;
 import com.bestarmedia.migration.model.mongo.vod.VodSinger;
 import com.bestarmedia.migration.model.mongo.vod.VodSong;
 import com.bestarmedia.migration.model.mongo.vod.VodSongVersion;
-import com.bestarmedia.migration.model.mongo.vod.VodSongVideoFile;
 import com.bestarmedia.migration.model.mysql.Musician;
 import com.bestarmedia.migration.model.mysql.Part;
 import com.bestarmedia.migration.model.mysql.Song;
@@ -282,7 +283,7 @@ public class MigrateService {
 //                    singer.setMusicianTypeText(musicianTypeTexts);
         singer.setRole(item.getRole());
         singer.setSex(item.getSex());
-        singer.setHot(item.getHot());
+        singer.setHot(item.getHot().longValue());
         singer.setBirthday(item.getBirthday());
         singer.setPart(null);
         Optional<Part> part;
@@ -292,6 +293,8 @@ public class MigrateService {
 
         singer.setImgFilePath(item.getImgFilePath());
         singer.setStatus(item.getStatus());
+
+
         List<String> alias = new ArrayList<>();
         //合并到曾用名
         if (!StringUtils.isEmpty(item.getSimpBynameOne())) {//别名1
@@ -304,6 +307,22 @@ public class MigrateService {
             alias.add(CommonUtil.deleteSpaceAndUpperFirst(item.getSimpBynameFour()));
         }
         singer.setAlias(alias);//别名
+
+        List<SearchKeyword> searchKeywords = new ArrayList<>();
+        SearchKeyword searchKeyword = new SearchKeyword();
+        searchKeyword.setType(0);
+        searchKeyword.setCode(singer.getCode());
+        List<String> keywords = new ArrayList<>();
+        keywords.add(singer.getMusicianName());
+        keywords.add(singer.getSimplicity());
+        if (!alias.isEmpty()) {
+            keywords.addAll(alias);
+        }
+        searchKeyword.setKeywords(keywords);
+        searchKeywords.add(searchKeyword);
+
+        singer.setSearchKeywords(searchKeywords);
+
         singer.setCreatedAt(item.getCreatedAt());
         singer.setUpdatedAt(item.getUpdatedAt());
         singer.setDeletedAt(item.getDeletedAt());
@@ -350,7 +369,7 @@ public class MigrateService {
         singer.setRole(item.getRole());
         singer.setSex(item.getSex());
         singer.setHot(0L);
-        singer.setHotSum(Long.valueOf(item.getHot()));
+        singer.setHotSum(item.getHot().longValue());
 //        singer.setBirthday(item.getBirthday() == null ? DateUtil.string2DateTime("1970-01-01 00:00:00") : item.getBirthday());
         singer.setBirthday(item.getBirthday());
         singer.setPart(null);
@@ -372,6 +391,22 @@ public class MigrateService {
             alias.add(CommonUtil.deleteSpaceAndUpperFirst(item.getSimpBynameFour()));
         }
         singer.setAlias(alias);//别名
+
+        List<SearchKeyword> searchKeywords = new ArrayList<>();
+        SearchKeyword searchKeyword = new SearchKeyword();
+        searchKeyword.setType(0);
+        searchKeyword.setCode(singer.getCode());
+        List<String> keywords = new ArrayList<>();
+        keywords.add(singer.getMusicianName());
+        keywords.add(singer.getSimplicity());
+        if (!alias.isEmpty()) {
+            keywords.addAll(alias);
+        }
+        searchKeyword.setKeywords(keywords);
+        searchKeywords.add(searchKeyword);
+
+        singer.setSearchKeywords(searchKeywords);
+
         singer.setMold(1);
         singer.setRemark("");
         singer.setCreatedAt(item.getCreatedAt());
@@ -611,13 +646,13 @@ public class MigrateService {
 
     private VodSongVersion createVersion(Integer songId, Song song) {
         VodSongVersion version = new VodSongVersion();
-        version.setCode(song.getSongId() + "");//以旧歌曲版本命名版本id
+        version.setCode(song.getSongId());//以旧歌曲版本命名版本id
         version.setSongCode(songId);
         version.setSongCodeOld(song.getSongId());
         CodeName edition = getEdition(song.getVideoType());
-        version.setVersionNameCode(edition.getCode());
-//        version.setVersionName( edition.getName());
-        version.setVersionsType(1);
+        version.setType(1);
+        version.setVersionsType(edition.getCode());
+        version.setVersionsName(edition.getName());
         version.setSource(song.getSongSource() + "");
         version.setAlbum(null);
 //        version.setLitigant(getIdNames(song.getLitigantMid(), song.getLitigant()));//诉讼权利人
@@ -632,7 +667,7 @@ public class MigrateService {
         version.setCreatedAt(song.getCreatedAt());
         version.setUpdatedAt(song.getUpdatedAt());
         version.setDeletedAt(song.getDeletedAt());
-        List<VodSongVideoFile> files = new ArrayList<>();
+        List<VideoFile> files = new ArrayList<>();
         files.add(createFileDto(song));
         version.setVideoFileList(files);
         VodSongVersion save = vodSongVersionRepository.insert(version);
@@ -726,10 +761,9 @@ public class MigrateService {
                         vodSong.setWordCount(item.getWordCount());
                         vodSong.setSongType(new CodeName(item.getSongType().getId(), item.getSongType().getName()));
                         vodSong.setLanguage(new CodeName(item.getLanguage().getId(), item.getLanguage().getLanguageName()));
-                        vodSong.setTag(null);
+                        vodSong.setTag(new ArrayList<>());
                         vodSong.setRecommend(item.getSofthard());
                         vodSong.setHot(0L);
-                        vodSong.setHot(item.getHot());
                         vodSong.setHotSum(item.getHot());
                         vodSong.setStatus(item.getStatus());
                         vodSong.setNoteOne(item.getNoteOne());
@@ -762,8 +796,8 @@ public class MigrateService {
 
     private SongSongVersion createSongVersion(Integer songId, String songName, Song song) {
         SongSongVersion version = new SongSongVersion();
-        version.setCode(song.getSongId() + "");//以旧歌曲版本命名版本id
-        version.setSongCode(songId);
+        version.setCode(song.getSongId());//以旧歌曲版本命名版本id
+//        version.setSongCode(songId);
         version.setSong(new CodeName(songId, songName));
         version.setSongCodeOld(song.getSongId());
         CodeName edition = getEdition(song.getVideoType());
@@ -788,7 +822,7 @@ public class MigrateService {
         version.setDeletedAt(song.getDeletedAt());
         version.setCreateUser(song.getCreateUser());
         version.setUpdateUser(song.getUpdateUser());
-        List<VodSongVideoFile> files = new ArrayList<>();
+        List<VideoFile> files = new ArrayList<>();
         files.add(createFileDto(song));
         version.setVideoFileList(files);
         SongSongVersion save = songSongVersionRepository.replace(version);
@@ -803,9 +837,9 @@ public class MigrateService {
 
 
     //
-    public VodSongVideoFile createFileDto(Song song) {
-        VodSongVideoFile file = new VodSongVideoFile();
-        file.setCode(song.getSongCode() + "");
+    public VideoFile createFileDto(Song song) {
+        VideoFile file = new VideoFile();
+        file.setCode(song.getSongId());
         file.setFileName(song.getMediaFilePath().substring(song.getMediaFilePath().lastIndexOf("/") + 1));
         file.setFilePath("https://song-enterprise.oss-cn-shenzhen.aliyuncs.com/song/h264/" + file.getFileName());
         file.setFormatName("H264");
@@ -814,11 +848,17 @@ public class MigrateService {
         file.setResolutionHeight(song.getResolutionHeight());
         file.setAudioTrack(song.getAudioTrack());
         file.setVolume(song.getVolume());
-        file.setHot(0);
+        file.setHot(0L);
+        file.setRecommend(song.getSofthard());
         file.setStatus(song.getStatus());
         file.setLyricFilePath("");
-        file.setScoreFilePath(!StringUtils.isEmpty(song.getScoreStandardFilePath()) && !StringUtils.isEmpty(song.getCoordinateFilePath()) ?
-                (song.getScoreStandardFilePath() + "|" + song.getCoordinateFilePath()) : "");
+        if (!StringUtils.isEmpty(song.getScoreStandardFilePath()) && !StringUtils.isEmpty(song.getCoordinateFilePath())) {
+            file.setScoreFilePath(song.getScoreStandardFilePath());
+            file.setCoordinatesFilePath(song.getCoordinateFilePath());
+        } else {
+            file.setScoreFilePath("");
+            file.setCoordinatesFilePath("");
+        }
         file.setRemark("");
         return file;
     }

@@ -1,7 +1,7 @@
 package com.bestarmedia.migration.model.mongo.song;
 
 import com.bestarmedia.migration.model.mongo.CodeName;
-import com.bestarmedia.migration.model.mongo.vod.VodSongVideoFile;
+import com.bestarmedia.migration.model.mongo.VideoFile;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -20,10 +20,10 @@ import java.util.List;
 public class SongSongVersion extends SongAuditing {
 
     @Field(value = "code")
-    private String code;//id
+    private Integer code;//id
 
-    @Field(value = "song_code")
-    private Integer songCode;//歌曲id
+//    @Field(value = "song_code")
+//    private Integer songCode;//歌曲id
 
     @Field(value = "song")
     private CodeName song;//歌曲id+歌名
@@ -77,6 +77,6 @@ public class SongSongVersion extends SongAuditing {
     private Integer status;//状态
 
     @Field(value = "file")
-    private List<VodSongVideoFile> videoFileList;//文件
+    private List<VideoFile> videoFileList;//文件
 
 }
