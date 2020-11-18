@@ -23,10 +23,9 @@ public class FillDataController {
 
 
     @GetMapping("/v7.0/migration/fill-data")
-    public JsonResponse fillData(@RequestParam(value = "index", defaultValue = "0") Integer index,
-                                 @RequestParam(value = "type", defaultValue = "0") Integer type) {
+    public JsonResponse fillData(@RequestParam(value = "index", defaultValue = "0") Integer index) {
         HashMap<String, String> map = new HashMap<>();
-        map.put("tip", fillDataService.fill(index, type));
+        map.put("tip", fillDataService.fill(index));
         return JsonResponseHandler.success(map);
     }
 

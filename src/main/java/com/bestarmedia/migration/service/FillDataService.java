@@ -1,16 +1,11 @@
 package com.bestarmedia.migration.service;
 
 
+import com.bestarmedia.migration.misc.CommonUtil;
 import com.bestarmedia.migration.model.mongo.CodeName;
-import com.bestarmedia.migration.model.mongo.vod.VodSinger;
-import com.bestarmedia.migration.model.mongo.vod.VodSong;
-import com.bestarmedia.migration.model.mongo.vod.VodSongVersion;
 import com.bestarmedia.migration.model.mysql.Musician;
 import com.bestarmedia.migration.model.mysql.Song;
-import com.bestarmedia.migration.misc.CommonUtil;
-import com.bestarmedia.migration.repository.mongo.vod.VodSingerRepository;
-import com.bestarmedia.migration.repository.mongo.vod.VodSongRepository;
-import com.bestarmedia.migration.repository.mongo.vod.VodSongVersionRepository;
+import com.bestarmedia.migration.repository.mongo.song.SongSongVersionRepository;
 import com.bestarmedia.migration.repository.mysql.MysqlMusicianRepository;
 import com.bestarmedia.migration.repository.mysql.MysqlSongRepository;
 import org.apache.poi.hssf.usermodel.HSSFDateUtil;
@@ -29,35 +24,30 @@ import java.io.InputStream;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 
 @Service
 public class FillDataService {
 
-    private final VodSongRepository songRepository;
-    private final VodSingerRepository singerRepository;
-    private final VodSongVersionRepository songVersionRepository;
+    private final SongSongVersionRepository songSongVersionRepository;
+//    private final VodSingerRepository vodSingerRepository;
+//    private final VodSongVersionRepository vodSongVersionRepository;
 
     private final MysqlSongRepository mysqlSongRepository;
     private final MysqlMusicianRepository mysqlMusicianRepository;
 
     @Autowired
-    public FillDataService(VodSongRepository songRepository, VodSingerRepository singerRepository, VodSongVersionRepository songVersionRepository,
+    public FillDataService(SongSongVersionRepository songSongVersionRepository,
                            MysqlSongRepository mysqlSongRepository, MysqlMusicianRepository mysqlMusicianRepository) {
-        this.songRepository = songRepository;
-        this.singerRepository = singerRepository;
-        this.songVersionRepository = songVersionRepository;
+        this.songSongVersionRepository = songSongVersionRepository;
         this.mysqlSongRepository = mysqlSongRepository;
         this.mysqlMusicianRepository = mysqlMusicianRepository;
     }
 
-    public String fill(Integer index, Integer type) {
-
+    public String fill(Integer index) {
         int updateNoIdSongCount = 0;
         int updateNoIdVersionCount = 0;
-
         XSSFWorkbook wb;
         XSSFSheet sheet;
         try {
@@ -66,7 +56,6 @@ public class FillDataService {
             InputStream in = new FileInputStream(cfgFile);
             //读取excel模板
             wb = new XSSFWorkbook(in);
-
             sheet = wb.getSheetAt(0);
             int size = sheet.getPhysicalNumberOfRows();
             int from = 1;
@@ -86,25 +75,14 @@ public class FillDataService {
                 String publisher = CommonUtil.deleteSpecialChar(getString(sheet.getRow(row).getCell(7)));
                 String releaseTime = CommonUtil.deleteSpecialChar(getString(sheet.getRow(row).getCell(8)));
                 System.out.println("第" + row + "行，id：" + id + " 歌名：" + songName + " 歌星：" + singer + " 词：" + lyricist + " 曲：" + composer
-                        + " 诉讼：" + litigant + " 制作：" + producer + " 出品：" + publisher + " 发行日期：" + (releaseTime == null ? "" : releaseTime));
-
-                List<CodeName> singers = type == 1 ? handlerMusicianMySQL(1, singer) : handlerMusicianMongo(1, singer);
-                List<CodeName> lyricists = type == 1 ? handlerMusicianMySQL(2, lyricist) : handlerMusicianMongo(2, lyricist);
-                List<CodeName> composers = type == 1 ? handlerMusicianMySQL(3, composer) : handlerMusicianMongo(3, composer);
-                List<CodeName> litigants = type == 1 ? handlerMusicianMySQL(4, litigant) : handlerMusicianMongo(4, litigant);
-                List<CodeName> producers = type == 1 ? handlerMusicianMySQL(5, producer) : handlerMusicianMongo(5, producer);
-                List<CodeName> publishers = type == 1 ? handlerMusicianMySQL(6, publisher) : handlerMusicianMongo(6, publisher);
-                Date releaseDate = null;
-                try {
-                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-                    releaseDate = sdf.parse(releaseTime);
-                } catch (Exception e) {
-                }
-                if (type == 1) {
-                    fill2Mysql(id, songName, singers, lyricists, composers, litigants, producers, publishers);
-                } else {
-                    fill2MongoDb(id, songName, singers, lyricists, composers, litigants, producers, publishers, releaseDate);
-                }
+                        + " 诉讼：" + litigant + " 制作：" + producer + " 出品：" + publisher + " 发行日期：" + releaseTime);
+                List<CodeName> singers = handlerMusicianMySQL(1, singer);
+                List<CodeName> lyricists = handlerMusicianMySQL(2, lyricist);
+                List<CodeName> composers = handlerMusicianMySQL(3, composer);
+                List<CodeName> litigants = handlerMusicianMySQL(4, litigant);
+                List<CodeName> producers = handlerMusicianMySQL(5, producer);
+                List<CodeName> publishers = handlerMusicianMySQL(6, publisher);
+                fill2Mysql(id, songName, singers, lyricists, composers, litigants, producers, publishers);
             }
             String tip = "更新歌曲总数：" + updateNoIdSongCount + " 更新版本总数：" + updateNoIdVersionCount;
             System.out.println(tip);
@@ -186,94 +164,132 @@ public class FillDataService {
         }
     }
 
+    public String fillReleaseTime() {
+        XSSFWorkbook wb;
+        XSSFSheet sheet;
+        long count = 0;
+        try {
+            //excel模板路径
+            File cfgFile = ResourceUtils.getFile(ResourceUtils.CLASSPATH_URL_PREFIX + "templates/song_message.xlsx");
+            InputStream in = new FileInputStream(cfgFile);
+            //读取excel模板
+            wb = new XSSFWorkbook(in);
+            sheet = wb.getSheetAt(0);
+            int size = sheet.getPhysicalNumberOfRows();
+            int from = 1;
 
-    private void fill2MongoDb(String id, String songName, List<CodeName> singers, List<CodeName> lyricists, List<CodeName> composers,
-                              List<CodeName> litigants, List<CodeName> producers, List<CodeName> publishers, Date releaseDate) {
-        if (StringUtils.isEmpty(id)) {//没歌曲id
-//                    boolean isUpdatedSong = false;
-//                    noIdCount++;
-//                    if (!singers.isEmpty()) {
-//                        List<String> names = new ArrayList<>();
-//                        singers.forEach(item -> names.add(item.getName()));
-//                        List<VodSong> songs = songRepository.findByNameAndSinger(songName, names);
-//                        if (songs != null && songs.size() == 1) {
-//                            VodSong song = songs.get(0);
-//                            song.setSongName(songName);
-//                            song.setSinger(singers);
-//                            song.setLyricist(lyricists);
-//                            song.setComposer(composers);
-//                            VodSong saveSong = songRepository.update(song);
-//                            System.out.println("无歌曲ID，通过歌名+歌星保存歌曲：" + CommonUtil.OBJECT_MAPPER.writeValueAsString(saveSong));
-//                            isUpdatedSong = true;
-//                            updateNoIdSongCount++;
-//
-//                            List<SongVersion> versions = songVersionRepository.findSongVersion(song.getCode());
-//                            if (versions != null && versions.size() == 1) {
-//                                SongVersion songVersion = versions.get(0);
-//                                songVersion.setLitigant(litigants);
-//                                songVersion.setProducer(producers);
-//                                songVersion.setPublisher(publishers);
-//                                songVersion.setIssueTime(releaseDate);
-//                                SongVersion saveVersion = songVersionRepository.update(songVersion.getCode(), litigants, producers, publishers, releaseDate);
-//                                System.out.println("无歌曲ID，通过歌名+歌星保存版本：" + CommonUtil.OBJECT_MAPPER.writeValueAsString(saveVersion));
-//
-//                                updateNoIdVersionCount++;
-//                            }
-//                        }
-//
-//
-//                        if (!isUpdatedSong) {
-//                            songs = songRepository.findByName(songName);
-//                            if (songs != null && songs.size() == 1) {
-//                                VodSong song = songs.get(0);
-//                                song.setSongName(songName);
-//                                song.setSinger(singers);
-//                                song.setLyricist(lyricists);
-//                                song.setComposer(composers);
-//                                VodSong saveSong = songRepository.update(song);
-//                                System.out.println("无歌曲ID，通过歌名保存歌曲：" + CommonUtil.OBJECT_MAPPER.writeValueAsString(saveSong));
-//                                updateNoIdSongCount++;
-//
-//                                List<SongVersion> versions = songVersionRepository.findSongVersion(song.getCode());
-//                                if (versions != null && versions.size() == 1) {
-//                                    SongVersion songVersion = versions.get(0);
-//                                    songVersion.setLitigant(litigants);
-//                                    songVersion.setProducer(producers);
-//                                    songVersion.setPublisher(publishers);
-//                                    songVersion.setIssueTime(releaseDate);
-//                                    SongVersion saveVersion = songVersionRepository.update(songVersion.getCode(), litigants, producers, publishers, releaseDate);
-//                                    System.out.println("无歌曲ID，通过歌名保存版本：" + CommonUtil.OBJECT_MAPPER.writeValueAsString(saveVersion));
-//
-//                                    updateNoIdVersionCount++;
-//                                }
-//                            }
-//                        }
-//                    }
-        } else {//有歌曲ID
-            VodSongVersion songVersion = songVersionRepository.findBySongCodeOld(Integer.valueOf(id));
-            if (songVersion != null) {
+            //循环取每行的数据
+            for (int row = from; row < size; row++) {
+                String id = getString(sheet.getRow(row).getCell(0));
+                String releaseTime = CommonUtil.deleteSpecialChar(getString(sheet.getRow(row).getCell(8)));
+                System.out.println("第" + row + "行，id：" + id + " 发行日期：" + releaseTime);
+                Date releaseDate = null;
                 try {
-                    VodSong song = songRepository.findByCodeNotStatus(songVersion.getSongCode());
-                    if (song.getSongName().equalsIgnoreCase(songName)) {//歌名匹配得上才更新
-//                        songVersion.setLitigant(litigants);
-//                        songVersion.setProducer(producers);
-//                        songVersion.setPublisher(publishers);
-//                        songVersion.setIssueTime(releaseDate);
-                        VodSongVersion saveVersion = songVersionRepository.update(songVersion.getCode(), litigants, producers, publishers, releaseDate);
-                        System.out.println("保存版本到Mongo：" + CommonUtil.OBJECT_MAPPER.writeValueAsString(saveVersion));
-                        song.setSongName(songName);
-                        song.setSinger(singers);
-                        song.setLyricist(lyricists);
-                        song.setComposer(composers);
-                        VodSong saveSong = songRepository.update(song);
-                        System.out.println("保存歌曲到Mongo：" + CommonUtil.OBJECT_MAPPER.writeValueAsString(saveSong));
-                    }
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+                    releaseDate = sdf.parse(releaseTime);
                 } catch (Exception e) {
-                    e.printStackTrace();
+                }
+                if (releaseDate != null) {
+                    count = count + songSongVersionRepository.updateIssueTime(Integer.valueOf(id), releaseDate);
                 }
             }
+            String tip = "更新发行时间总数量：" + count;
+            System.out.println(tip);
+            return tip;
+        } catch (Exception e) {
+            e.printStackTrace();
         }
+        return "";
     }
+
+
+//    private void fill2MongoDb(String id, String songName, List<CodeName> singers, List<CodeName> lyricists, List<CodeName> composers,
+//                              List<CodeName> litigants, List<CodeName> producers, List<CodeName> publishers, Date releaseDate) {
+//        if (StringUtils.isEmpty(id)) {//没歌曲id
+////                    boolean isUpdatedSong = false;
+////                    noIdCount++;
+////                    if (!singers.isEmpty()) {
+////                        List<String> names = new ArrayList<>();
+////                        singers.forEach(item -> names.add(item.getName()));
+////                        List<VodSong> songs = vodSongRepository.findByNameAndSinger(songName, names);
+////                        if (songs != null && songs.size() == 1) {
+////                            VodSong song = songs.get(0);
+////                            song.setSongName(songName);
+////                            song.setSinger(singers);
+////                            song.setLyricist(lyricists);
+////                            song.setComposer(composers);
+////                            VodSong saveSong = vodSongRepository.update(song);
+////                            System.out.println("无歌曲ID，通过歌名+歌星保存歌曲：" + CommonUtil.OBJECT_MAPPER.writeValueAsString(saveSong));
+////                            isUpdatedSong = true;
+////                            updateNoIdSongCount++;
+////
+////                            List<SongVersion> versions = vodSongVersionRepository.findSongVersion(song.getCode());
+////                            if (versions != null && versions.size() == 1) {
+////                                SongVersion songVersion = versions.get(0);
+////                                songVersion.setLitigant(litigants);
+////                                songVersion.setProducer(producers);
+////                                songVersion.setPublisher(publishers);
+////                                songVersion.setIssueTime(releaseDate);
+////                                SongVersion saveVersion = vodSongVersionRepository.update(songVersion.getCode(), litigants, producers, publishers, releaseDate);
+////                                System.out.println("无歌曲ID，通过歌名+歌星保存版本：" + CommonUtil.OBJECT_MAPPER.writeValueAsString(saveVersion));
+////
+////                                updateNoIdVersionCount++;
+////                            }
+////                        }
+////
+////
+////                        if (!isUpdatedSong) {
+////                            songs = vodSongRepository.findByName(songName);
+////                            if (songs != null && songs.size() == 1) {
+////                                VodSong song = songs.get(0);
+////                                song.setSongName(songName);
+////                                song.setSinger(singers);
+////                                song.setLyricist(lyricists);
+////                                song.setComposer(composers);
+////                                VodSong saveSong = vodSongRepository.update(song);
+////                                System.out.println("无歌曲ID，通过歌名保存歌曲：" + CommonUtil.OBJECT_MAPPER.writeValueAsString(saveSong));
+////                                updateNoIdSongCount++;
+////
+////                                List<SongVersion> versions = vodSongVersionRepository.findSongVersion(song.getCode());
+////                                if (versions != null && versions.size() == 1) {
+////                                    SongVersion songVersion = versions.get(0);
+////                                    songVersion.setLitigant(litigants);
+////                                    songVersion.setProducer(producers);
+////                                    songVersion.setPublisher(publishers);
+////                                    songVersion.setIssueTime(releaseDate);
+////                                    SongVersion saveVersion = vodSongVersionRepository.update(songVersion.getCode(), litigants, producers, publishers, releaseDate);
+////                                    System.out.println("无歌曲ID，通过歌名保存版本：" + CommonUtil.OBJECT_MAPPER.writeValueAsString(saveVersion));
+////
+////                                    updateNoIdVersionCount++;
+////                                }
+////                            }
+////                        }
+////                    }
+//        } else {//有歌曲ID
+//            VodSongVersion songVersion = vodSongVersionRepository.findBySongCodeOld(Integer.valueOf(id));
+//            if (songVersion != null) {
+//                try {
+//                    VodSong song = vodSongRepository.findByCodeNotStatus(songVersion.getSongCode());
+//                    if (song.getSongName().equalsIgnoreCase(songName)) {//歌名匹配得上才更新
+////                        songVersion.setLitigant(litigants);
+////                        songVersion.setProducer(producers);
+////                        songVersion.setPublisher(publishers);
+////                        songVersion.setIssueTime(releaseDate);
+//                        VodSongVersion saveVersion = vodSongVersionRepository.update(songVersion.getCode(), litigants, producers, publishers, releaseDate);
+//                        System.out.println("保存版本到Mongo：" + CommonUtil.OBJECT_MAPPER.writeValueAsString(saveVersion));
+//                        song.setSongName(songName);
+//                        song.setSinger(singers);
+//                        song.setLyricist(lyricists);
+//                        song.setComposer(composers);
+//                        VodSong saveSong = vodSongRepository.update(song);
+//                        System.out.println("保存歌曲到Mongo：" + CommonUtil.OBJECT_MAPPER.writeValueAsString(saveSong));
+//                    }
+//                } catch (Exception e) {
+//                    e.printStackTrace();
+//                }
+//            }
+//        }
+//    }
 
     private List<CodeName> handlerMusicianMySQL(int musicianType, String musicians) {
         List<CodeName> songSingers = new ArrayList<>();
@@ -294,67 +310,67 @@ public class FillDataService {
     }
 
 
-    private List<CodeName> handlerMusicianMongo(int musicianType, String musicians) {
-        List<CodeName> songSingers = new ArrayList<>();
-        if (!StringUtils.isEmpty(musicians)) {
-            String[] singers = musicians.split("\\|");
-            for (String name : singers) {
-                String n = CommonUtil.deleteSpaceAndUpperFirst(name);
-                VodSinger singerModel = singerRepository.findSingerByName(n);
-                if (singerModel == null) {//新建歌手信息
-                    CodeName commonSimple = new CodeName();
-                    commonSimple.setCode(0);
-                    commonSimple.setName(n);
-                    songSingers.add(commonSimple);
-//                        int code = singerRepository.findLastCode() + 1;
-//                        Singer s = new Singer();
-//                        s.setCode(code);
-//                        s.setMusicianType(new ArrayList<>(1));
-//                        s.setSimplicity();
-//                        s.setMusicianName(n);
-//                        s.setWordCount();
-//                        s.setHot(0);
-//                        s.setSex();
-//                        s.setRole(0);
-//                        s.setPart();
-//                        s.setImgFilePath();
-//                        s.setStatus(1);
-//                        s.setAlias();
-                } else {
-                    boolean exitType = false;
-                    for (Integer type : singerModel.getMusicianType()) {
-                        if (type == musicianType) {
-                            exitType = true;
-                        }
-                    }
-                    if (!exitType) {//添加身份
-                        List<Integer> musicianTypes = singerModel.getMusicianType();
-                        musicianTypes.add(musicianType);
-                        musicianTypes.sort(Comparator.naturalOrder());
-                        singerModel.setMusicianType(musicianTypes);
-                        VodSinger save = singerRepository.replace(singerModel);
-                        try {
-                            System.out.println("保存音乐人：" + CommonUtil.OBJECT_MAPPER.writeValueAsString(save));
-
-                        } catch (Exception e) {
-
-                        }
-                        CodeName commonSimple = new CodeName();
-                        commonSimple.setCode(save.getCode());
-                        commonSimple.setName(save.getMusicianName());
-
-                        songSingers.add(commonSimple);
-                    } else {
-                        CodeName commonSimple = new CodeName();
-                        commonSimple.setCode(singerModel.getCode());
-                        commonSimple.setName(singerModel.getMusicianName());
-                        songSingers.add(commonSimple);
-                    }
-                }
-            }
-        }
-        return songSingers;
-    }
+//    private List<CodeName> handlerMusicianMongo(int musicianType, String musicians) {
+//        List<CodeName> songSingers = new ArrayList<>();
+//        if (!StringUtils.isEmpty(musicians)) {
+//            String[] singers = musicians.split("\\|");
+//            for (String name : singers) {
+//                String n = CommonUtil.deleteSpaceAndUpperFirst(name);
+//                VodSinger singerModel = vodSingerRepository.findSingerByName(n);
+//                if (singerModel == null) {//新建歌手信息
+//                    CodeName commonSimple = new CodeName();
+//                    commonSimple.setCode(0);
+//                    commonSimple.setName(n);
+//                    songSingers.add(commonSimple);
+////                        int code = vodSingerRepository.findLastCode() + 1;
+////                        Singer s = new Singer();
+////                        s.setCode(code);
+////                        s.setMusicianType(new ArrayList<>(1));
+////                        s.setSimplicity();
+////                        s.setMusicianName(n);
+////                        s.setWordCount();
+////                        s.setHot(0);
+////                        s.setSex();
+////                        s.setRole(0);
+////                        s.setPart();
+////                        s.setImgFilePath();
+////                        s.setStatus(1);
+////                        s.setAlias();
+//                } else {
+//                    boolean exitType = false;
+//                    for (Integer type : singerModel.getMusicianType()) {
+//                        if (type == musicianType) {
+//                            exitType = true;
+//                        }
+//                    }
+//                    if (!exitType) {//添加身份
+//                        List<Integer> musicianTypes = singerModel.getMusicianType();
+//                        musicianTypes.add(musicianType);
+//                        musicianTypes.sort(Comparator.naturalOrder());
+//                        singerModel.setMusicianType(musicianTypes);
+//                        VodSinger save = vodSingerRepository.replace(singerModel);
+//                        try {
+//                            System.out.println("保存音乐人：" + CommonUtil.OBJECT_MAPPER.writeValueAsString(save));
+//
+//                        } catch (Exception e) {
+//
+//                        }
+//                        CodeName commonSimple = new CodeName();
+//                        commonSimple.setCode(save.getCode());
+//                        commonSimple.setName(save.getMusicianName());
+//
+//                        songSingers.add(commonSimple);
+//                    } else {
+//                        CodeName commonSimple = new CodeName();
+//                        commonSimple.setCode(singerModel.getCode());
+//                        commonSimple.setName(singerModel.getMusicianName());
+//                        songSingers.add(commonSimple);
+//                    }
+//                }
+//            }
+//        }
+//        return songSingers;
+//    }
 
     /**
      * 把单元格的内容转为字符串
@@ -378,11 +394,5 @@ public class FillDataService {
         } else {
             return xssfCell.getStringCellValue();
         }
-    }
-
-
-    public void testAggregationOperation() {
-        songVersionRepository.findSongInfo();
-
     }
 }

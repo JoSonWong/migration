@@ -75,6 +75,17 @@ public class CommonUtil {
         return false;
     }
 
+    public static boolean isAllChinese(String name) {
+        int n;
+        for (int i = 0; i < name.length(); i++) {
+            n = (int) name.charAt(i);
+            if (!(19968 <= n && n < 40869)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
 
     public static String deleteParenthesesEnd(String songName) {
         if (songName.endsWith(")") && songName.contains("(")) {//处理括号结尾

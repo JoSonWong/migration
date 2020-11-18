@@ -1,6 +1,7 @@
 package com.bestarmedia.migration.repository.mongo.vod;
 
 import com.bestarmedia.migration.model.mongo.vod.VodSinger;
+import com.mongodb.client.result.DeleteResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Page;
@@ -67,13 +68,20 @@ public class VodSingerRepository {
         return singers == null || singers.isEmpty() ? 0 : singers.get(0).getCode();
     }
 
-    public VodSinger replace(VodSinger singer) {
-        vodMongoTemplate.remove(new Query(Criteria.where("code").is(singer.getCode())), VodSinger.class);
-        return vodMongoTemplate.insert(singer);
-    }
+//    public VodSinger replace(VodSinger singer) {
+//        vodMongoTemplate.remove(new Query(Criteria.where("code").is(singer.getCode())), VodSinger.class);
+//        return vodMongoTemplate.insert(singer);
+//    }
 
     public VodSinger insert(VodSinger singer) {
         return vodMongoTemplate.insert(singer);
     }
 
+
+    public long cleanAllData() {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("code").gt(0));
+        DeleteResult result = vodMongoTemplate.remove(query, VodSinger.class);
+        return result.getDeletedCount();       //返回执行的条
+    }
 }

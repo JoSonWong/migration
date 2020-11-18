@@ -33,7 +33,7 @@ public class SongInformation extends SongAuditing {
     private Integer wordCount;//字数
 
     @Field(value = "song_type")
-    private CodeName songType;//分类
+    private SongType songType;//分类
 
     @Field(value = "singer")
     private List<CodeName> singer;//歌手

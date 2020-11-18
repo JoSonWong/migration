@@ -3,6 +3,7 @@ package com.bestarmedia.migration.repository.mongo.vod;
 import com.bestarmedia.migration.misc.CommonUtil;
 import com.bestarmedia.migration.model.mongo.CodeName;
 import com.bestarmedia.migration.model.mongo.vod.VodSongVersion;
+import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -99,8 +100,16 @@ public class VodSongVersionRepository {
         return vodMongoTemplate.insert(vodSongVersion);
     }
 
-    public VodSongVersion replace(VodSongVersion vodSongVersion) {
-        vodMongoTemplate.remove(new Query(Criteria.where("code").is(vodSongVersion.getCode())), VodSongVersion.class);
-        return vodMongoTemplate.insert(vodSongVersion);
+//    public VodSongVersion replace(VodSongVersion vodSongVersion) {
+//        vodMongoTemplate.remove(new Query(Criteria.where("code").is(vodSongVersion.getCode())), VodSongVersion.class);
+//        return vodMongoTemplate.insert(vodSongVersion);
+//    }
+
+
+    public long cleanAllData() {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("code").gt(0));
+        DeleteResult result = vodMongoTemplate.remove(query, VodSongVersion.class);
+        return result.getDeletedCount();       //返回执行的条
     }
 }
