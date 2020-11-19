@@ -16,9 +16,9 @@ public class MusicianScanController {
     private final MongoSongMusicianScannerService mongoSongMusicianScannerService;
     private final MongoSongMusicianCleanerService mongoSongMusicianCleanerService;
 
-
     @Autowired
-    public MusicianScanController(MongoSongMusicianScannerService mongoSongMusicianScannerService, MongoSongMusicianCleanerService mongoSongMusicianCleanerService) {
+    public MusicianScanController(MongoSongMusicianScannerService mongoSongMusicianScannerService,
+                                  MongoSongMusicianCleanerService mongoSongMusicianCleanerService) {
         this.mongoSongMusicianScannerService = mongoSongMusicianScannerService;
         this.mongoSongMusicianCleanerService = mongoSongMusicianCleanerService;
     }
@@ -44,4 +44,5 @@ public class MusicianScanController {
         map.put("clean", mongoSongMusicianCleanerService.cleanMusician());
         return JsonResponseHandler.success(map);
     }
+
 }

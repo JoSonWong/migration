@@ -60,4 +60,7 @@ public class VodSinger extends Auditing {
     @Field(value = "search_keywords")
     private List<SearchKeyword> searchKeywords;//搜索关键字
 
+//    @Field(value = "file_formats")
+//    private List<MusicianFileFormat> musicianFileFormats;//名下歌曲版本统计
+
 }

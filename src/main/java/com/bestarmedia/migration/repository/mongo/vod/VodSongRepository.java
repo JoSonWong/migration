@@ -1,7 +1,6 @@
 package com.bestarmedia.migration.repository.mongo.vod;
 
 
-import com.bestarmedia.migration.model.mongo.song.SongInformation;
 import com.bestarmedia.migration.model.mongo.vod.VodSong;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
@@ -79,8 +78,26 @@ public class VodSongRepository {
 
     public long cleanAllData() {
         Query query = new Query();
-        query.addCriteria(Criteria.where("code").gt(0));
+//        query.addCriteria(Criteria.where("code").gt(0));
         DeleteResult result = vodMongoTemplate.remove(query, VodSong.class);
         return result.getDeletedCount();       //返回执行的条
     }
+
+//    /**
+//     * 格式名下文件歌星
+//     *
+//     * @param singerCode
+//     * @param fileFormat
+//     * @return
+//     */
+//    public int findSingerFileFormatCount(Integer singerCode, String fileFormat) {
+//        Query query = new Query();
+//        Criteria criteria = new Criteria();
+//        criteria.and("status").is(1);
+//        criteria.and("singer.code").is(singerCode);
+//        criteria.and("version_simples").elemMatch(Criteria.where("status").is(1).and("file_simples").elemMatch(Criteria.where("status").is(1).and("format_name").is(fileFormat)));
+//        query.addCriteria(criteria);
+//        return vodMongoTemplate.find(query, VodSong.class).size();
+//    }
+
 }

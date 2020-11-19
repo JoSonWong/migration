@@ -63,4 +63,7 @@ public class VodSong extends Auditing {
     @Field(value = "status")
     private Integer status;//上下架状态 下架：0，上架：1
 
+//    @Field(value = "version_simples")
+//    private List<SongVersionSimple> songVersionSimples;
+
 }

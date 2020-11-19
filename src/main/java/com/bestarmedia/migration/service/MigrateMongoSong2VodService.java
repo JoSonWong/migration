@@ -3,6 +3,7 @@ package com.bestarmedia.migration.service;
 
 import com.bestarmedia.migration.misc.CommonUtil;
 import com.bestarmedia.migration.misc.DateUtil;
+import com.bestarmedia.migration.model.mongo.VideoFile;
 import com.bestarmedia.migration.model.mongo.song.*;
 import com.bestarmedia.migration.model.mongo.vod.*;
 import com.bestarmedia.migration.repository.mongo.song.*;
@@ -11,8 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.Calendar;
-import java.util.List;
+import java.util.*;
 
 @Service
 @Slf4j
@@ -31,11 +31,11 @@ public class MigrateMongoSong2VodService extends MigrateBase {
     private final VodAreaRepository vodAreaRepository;
     private final VodLanguageRepository vodLanguageRepository;
     private final VodSongTypeRepository vodSongTypeRepository;
-
     private int versionCount = 0;
     private int songCount = 0;
-
     private int musicianCount = 0;
+    private Map<Integer, Boolean> types = new HashMap<>();
+    private Map<String, Boolean> formats = new HashMap<>();
 
     @Autowired
     public MigrateMongoSong2VodService(SongAreaRepository songAreaRepository,
@@ -50,8 +50,7 @@ public class MigrateMongoSong2VodService extends MigrateBase {
                                        VodSongRepository vodSongRepository,
                                        VodAreaRepository vodAreaRepository,
                                        VodLanguageRepository vodLanguageRepository,
-                                       VodSongTypeRepository vodSongTypeRepository
-    ) {
+                                       VodSongTypeRepository vodSongTypeRepository) {
         this.songAreaRepository = songAreaRepository;
         this.songInformationRepository = songInformationRepository;
         this.songLanguageRepository = songLanguageRepository;
@@ -65,16 +64,29 @@ public class MigrateMongoSong2VodService extends MigrateBase {
         this.vodAreaRepository = vodAreaRepository;
         this.vodLanguageRepository = vodLanguageRepository;
         this.vodSongTypeRepository = vodSongTypeRepository;
+
     }
 
-    public String migrate() {
+    public String migrate(String typeFormat) {
+        types.clear();
+        formats.clear();
         long currentTimeMillis = System.currentTimeMillis();
-        mergeLanguage();
-        mergeArea();
-        mergeSongType();
-        migrateMusician();
-        migrateSong();
-        migrateVersion();
+//        mergeLanguage();
+//        mergeArea();
+//        mergeSongType();
+//        migrateMusician();
+//        //        migrateSong();
+        System.out.println("清除歌曲信息数量:" + vodSongRepository.cleanAllData());
+
+        String[] typeFormats = typeFormat.split(";");
+        for (String tf : typeFormats) {
+            String[] tfs = tf.split(",");
+            types.put(Integer.parseInt(tfs[0]), true);
+            formats.put(tfs[1], true);
+        }
+        if (types.size() > 0 && formats.size() > 0) {
+            migrateVersion();
+        }
         String tip = "Mongo.Song 迁移数据到 Mongo.Vod 总耗时：" + (System.currentTimeMillis() - currentTimeMillis) / 1000 + "秒";
         System.out.println(tip);
         return tip;
@@ -158,7 +170,7 @@ public class MigrateMongoSong2VodService extends MigrateBase {
         musicianCount = 0;
         long cur = System.currentTimeMillis();
         int count = (int) songMusicianRepository.countWarehousing();
-        final int pageSize = 10000;
+        final int pageSize = 1000;
         int size = count % pageSize == 0 ? count / pageSize : (count / pageSize + 1);
         System.out.println(DateUtil.getDateTime(Calendar.getInstance().getTime()) + " 音乐人总量：" + count + " 分页数：" + size + " 每页条数：" + pageSize);
         for (int i = 0; i < size; i++) {
@@ -171,6 +183,7 @@ public class MigrateMongoSong2VodService extends MigrateBase {
 
 
     private void migrateMusician(int page, int pageSize) {
+        System.out.println(DateUtil.getDateTime(Calendar.getInstance().getTime()) + " 音乐人 Mongo.Song >>> Mongo.Vod 页码：" + page + " 页长：" + pageSize);
         List<SongMusician> list = songMusicianRepository.indexWarehousingMusician(page, pageSize);
         list.forEach(item -> {
             VodSinger vodSinger = new VodSinger();
@@ -199,7 +212,7 @@ public class MigrateMongoSong2VodService extends MigrateBase {
         versionCount = 0;
         long cur = System.currentTimeMillis();
         int count = (int) songSongVersionRepository.count();
-        final int pageSize = 10000;
+        final int pageSize = 1000;
         int size = count % pageSize == 0 ? count / pageSize : (count / pageSize + 1);
         System.out.println(DateUtil.getDateTime(Calendar.getInstance().getTime()) + " 版本总量：" + count + " 分页数：" + size + " 每页条数：" + pageSize);
         for (int i = 0; i < size; i++) {
@@ -210,30 +223,70 @@ public class MigrateMongoSong2VodService extends MigrateBase {
         return text;
     }
 
+
     public void migrateVersion(int page, int pageSize) {
-        System.out.println(DateUtil.getDateTime(Calendar.getInstance().getTime()) + " 开始处理版本 index：" + page);
+        System.out.println(DateUtil.getDateTime(Calendar.getInstance().getTime()) + " 版本信息 Mongo.Song >>> Mongo.Vod 页码：" + page + " 页长：" + pageSize);
         List<SongSongVersion> list = songSongVersionRepository.indexVersion(page, pageSize);
         list.forEach(item -> {
-            VodSongVersion version = new VodSongVersion();
-            version.setCode(item.getCode());
-            version.setSongCode(item.getSong().getCode());
-            version.setSongCodeOld(item.getSongCodeOld());
-            version.setType(item.getType());
-            version.setVersionsType(item.getVersionsType());
-            version.setVersionsName(item.getVersionsName());
-            version.setSource(item.getSource());
-            version.setIncreaseHot(item.getIncreaseHot());
-            version.setVersionHot(item.getVersionHot());
-            version.setVersionHotSum(item.getVersionHotSum());
-            version.setRecommend(item.getRecommend());
-            version.setStatus(item.getStatus());
-            version.setVideoFileList(item.getVideoFileList());
-            version.setCreatedAt(item.getCreatedAt());
-            version.setUpdatedAt(item.getUpdatedAt());
+            if (types.containsKey(item.getType()) && item.getVideoFileList() != null && !item.getVideoFileList().isEmpty()) {
+                List<VideoFile> files = new ArrayList<>();
+                item.getVideoFileList().forEach(it -> {
+                    if (formats.containsKey(it.getFormatName())) {
+                        files.add(it);
+                    }
+                });
+                if (!files.isEmpty()) {
+                    VodSongVersion version = new VodSongVersion();
+                    version.setCode(item.getCode());
+                    version.setSongCode(item.getSong().getCode());
+                    version.setSongCodeOld(item.getSongCodeOld());
+                    version.setType(item.getType());
+                    version.setVersionsTypeCode(item.getVersionsType());
+                    version.setSource(item.getSource());
+                    version.setIncreaseHot(item.getIncreaseHot());
+                    version.setVersionHot(item.getVersionHot());
+                    version.setVersionHotSum(item.getVersionHotSum());
+                    version.setRecommend(item.getRecommend());
+                    version.setStatus(item.getStatus());
+                    version.setVideoFileList(item.getVideoFileList());
+                    version.setCreatedAt(item.getCreatedAt());
+                    version.setUpdatedAt(item.getUpdatedAt());
 
-            vodSongVersionRepository.insert(version);
-            versionCount++;
+                    VodSongVersion save = vodSongVersionRepository.insert(version);
+                    versionCount++;
+                    VodSong vodSong = vodSongRepository.findByCodeNotStatus(save.getSongCode());
+                    if (vodSong == null) {
+                        SongInformation songInformation = songInformationRepository.findByCode(save.getSongCode());
+                        if (songInformation != null) {
+                            saveVodSong(songInformation);
+                        }
+                    }
+                }
+            }
+
         });
+    }
+
+    private void saveVodSong(SongInformation item) {
+        VodSong vodSong = new VodSong();
+        vodSong.setCode(item.getCode());
+        vodSong.setSongName(item.getSongName());
+        vodSong.setSongInitial(item.getSongInitial());
+        vodSong.setWordCount(item.getWordCount());
+        vodSong.setSongType(item.getSongType());
+        vodSong.setSinger(item.getSinger());
+        vodSong.setLyricist(item.getLyricist());
+        vodSong.setComposer(item.getComposer());
+        vodSong.setLanguage(item.getLanguage());
+        vodSong.setHot(item.getHot());
+        vodSong.setHotSum(item.getHotSum());
+        vodSong.setRecommend(item.getRecommend());
+        vodSong.setStatus(item.getStatus());
+        vodSong.setCreatedAt(item.getCreatedAt());
+        vodSong.setUpdatedAt(item.getUpdatedAt());
+//            vodSong.setSongVersionSimples(songSongVersionRepository.findVodSongVersion(vodSong.getCode()));
+        vodSongRepository.insert(vodSong);
+        songCount++;
     }
 
     private String migrateSong() {
@@ -241,7 +294,7 @@ public class MigrateMongoSong2VodService extends MigrateBase {
         songCount = 0;
         long cur = System.currentTimeMillis();
         int count = (int) songInformationRepository.count();
-        final int pageSize = 10000;
+        final int pageSize = 1000;
         int size = count % pageSize == 0 ? count / pageSize : (count / pageSize + 1);
         System.out.println(DateUtil.getDateTime(Calendar.getInstance().getTime()) + " 歌曲总量：" + count + " 分页数：" + size + " 每页条数：" + pageSize);
         for (int i = 0; i < size; i++) {
@@ -253,27 +306,8 @@ public class MigrateMongoSong2VodService extends MigrateBase {
     }
 
     private void migrateSong(int page, int pageSize) {
-        System.out.println(DateUtil.getDateTime(Calendar.getInstance().getTime()) + " 开始处理歌曲 index：" + page);
+        System.out.println(DateUtil.getDateTime(Calendar.getInstance().getTime()) + " 歌曲信息 Mongo.Song >>> Mongo.Vod 页码：" + page + " 页长：" + pageSize);
         List<SongInformation> list = songInformationRepository.indexSong(page, pageSize);
-        list.forEach(item -> {
-            VodSong vodSong = new VodSong();
-            vodSong.setCode(item.getCode());
-            vodSong.setSongName(item.getSongName());
-            vodSong.setSongInitial(item.getSongInitial());
-            vodSong.setWordCount(item.getWordCount());
-            vodSong.setSongType(item.getSongType());
-            vodSong.setSinger(item.getSinger());
-            vodSong.setLyricist(item.getLyricist());
-            vodSong.setComposer(item.getComposer());
-            vodSong.setLanguage(item.getLanguage());
-            vodSong.setHot(item.getHot());
-            vodSong.setHotSum(item.getHotSum());
-            vodSong.setRecommend(item.getRecommend());
-            vodSong.setStatus(item.getStatus());
-            vodSong.setCreatedAt(item.getCreatedAt());
-            vodSong.setUpdatedAt(item.getUpdatedAt());
-            vodSongRepository.insert(vodSong);
-            songCount++;
-        });
+        list.forEach(item -> saveVodSong(item));
     }
 }

@@ -115,7 +115,7 @@ public class MongoSongMusicianScannerService {
         final int pageSize = 1000;
         int size = (int) (count % pageSize == 0 ? count / pageSize : (count / pageSize + 1));
         System.out.println("歌曲信息总量：" + count + " 分页数：" + size);
-        for (int i = size - 1; i >= 0; i--) {
+        for (int i = 0; i < size; i++) {
             List<SongInformationSimple> list = songInformationRepository.findSong(i, pageSize);
             System.out.println("获取歌曲信息，分页：" + i + " 条数：" + pageSize + " 数据：" + list.size());
 
@@ -194,11 +194,13 @@ public class MongoSongMusicianScannerService {
                         SongMusician musician = songMusicianRepository.findSingerByName(name);
                         if (musician == null) {
                             SongMusician insertSave = songMusicianRepository.insert(createSongMusician(type, name));
+                            Integer code = insertSave.getCode();
+                            String mn = insertSave.getMusicianName();
                             System.out.println("创建音乐人：" + CommonUtil.OBJECT_MAPPER.writeValueAsString(insertSave));
                             updateSearchKeywords(insertSave);
                             createdMusicianCount++;
-                            names.add(new CodeName(insertSave.getCode(), insertSave.getMusicianName()));
-                            if (item.getCode().equals(insertSave.getCode())) {
+                            names.add(new CodeName(code, mn));
+                            if (!item.getCode().equals(insertSave.getCode())) {
                                 atomicBoolean.set(true);
                             }
                         } else {
@@ -218,7 +220,7 @@ public class MongoSongMusicianScannerService {
                                 updatedMusicianCount++;
                             }
                             names.add(new CodeName(musician.getCode(), musician.getMusicianName()));
-                            if (item.getCode().equals(musician.getCode())) {
+                            if (!item.getCode().equals(musician.getCode())) {
                                 atomicBoolean.set(true);
                             }
                         }

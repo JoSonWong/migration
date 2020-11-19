@@ -36,4 +36,7 @@ public class SongMusicianSimple {
 
     @Field(value = "search_keywords")
     private List<SearchKeyword> searchKeywords;//搜索关键字
+
+    @Field(value = "hot_sum")
+    private Long hotSum;//热度
 }

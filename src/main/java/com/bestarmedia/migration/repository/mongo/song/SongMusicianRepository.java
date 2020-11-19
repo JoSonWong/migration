@@ -73,7 +73,7 @@ public class SongMusicianRepository {
     public long count() {
         Query query = new Query();
         Criteria criteria = new Criteria();
-        query.addCriteria(criteria).with(Sort.by(Sort.Direction.ASC, "code"));
+        query.addCriteria(criteria).with(Sort.by(Sort.Direction.ASC, "hot_sum"));
         return songMongoTemplate.count(query, SongMusicianSimple.class);
 //        return songMongoTemplate.findAll(SongInformation.class);
     }
@@ -82,7 +82,7 @@ public class SongMusicianRepository {
         Query query = new Query();
         Criteria criteria = new Criteria();
         Pageable pageable = PageRequest.of(currentPage, perPage);
-        query.addCriteria(criteria).with(Sort.by(Sort.Direction.ASC, "code"));
+        query.addCriteria(criteria).with(Sort.by(Sort.Direction.DESC, "hot_sum"));
         return songMongoTemplate.find(query.with(pageable), SongMusicianSimple.class);
     }
 
@@ -98,7 +98,7 @@ public class SongMusicianRepository {
 
     public long cleanAllData() {
         Query query = new Query();
-        query.addCriteria(Criteria.where("code").gte(0));
+//        query.addCriteria(Criteria.where("code").gte(0));
         DeleteResult result = songMongoTemplate.remove(query, SongMusician.class);
         return result.getDeletedCount();       //返回执行的条
     }
@@ -107,7 +107,7 @@ public class SongMusicianRepository {
     public long countWarehousing() {
         Query query = new Query();
         Criteria criteria = new Criteria();
-        query.addCriteria(criteria).with(Sort.by(Sort.Direction.ASC, "code"));
+        query.addCriteria(criteria).with(Sort.by(Sort.Direction.DESC, "hot_sum"));
         return songMongoTemplate.count(query, SongMusicianSimple.class);
 //        return songMongoTemplate.findAll(SongInformation.class);
     }
@@ -118,7 +118,7 @@ public class SongMusicianRepository {
         Criteria criteria = new Criteria();
         query.addCriteria(Criteria.where("mold").is(1));
         Pageable pageable = PageRequest.of(currentPage, perPage);
-        query.addCriteria(criteria).with(Sort.by(Sort.Direction.ASC, "code"));
+        query.addCriteria(criteria).with(Sort.by(Sort.Direction.DESC, "hot_sum"));
         return songMongoTemplate.find(query.with(pageable), SongMusician.class);
     }
 

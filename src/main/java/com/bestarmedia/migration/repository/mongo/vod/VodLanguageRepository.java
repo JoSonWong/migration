@@ -18,7 +18,7 @@ public class VodLanguageRepository {
 
     public long cleanAllData() {
         Query query = new Query();
-        query.addCriteria(Criteria.where("code").gt(0));
+//        query.addCriteria(Criteria.where("code").gt(0));
         DeleteResult result = vodMongoTemplate.remove(query, VodLanguage.class);
         return result.getDeletedCount();       //返回执行的条
     }

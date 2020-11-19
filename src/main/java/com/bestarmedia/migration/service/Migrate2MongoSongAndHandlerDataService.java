@@ -29,9 +29,9 @@ public class Migrate2MongoSongAndHandlerDataService {
     public String migrate() {
         long total = System.currentTimeMillis();
         long current = System.currentTimeMillis();
-        String fillExcelData = fillDataService.fill(0);
-        System.out.println("Excel 填充数据到 MySQL 耗时：" + (System.currentTimeMillis() - current) / 1000 + " 秒，返回结果：" + fillExcelData);
-        current = System.currentTimeMillis();
+//        String fillExcelData = fillDataService.fill(0);
+//        System.out.println("Excel 填充数据到 MySQL 耗时：" + (System.currentTimeMillis() - current) / 1000 + " 秒，返回结果：" + fillExcelData);
+//        current = System.currentTimeMillis();
         migrateMySQL2MongoSongService.migrate();
         System.out.println("MySQL 迁移数据到 Mongo.Song 耗时：" + (System.currentTimeMillis() - current) / 1000);
         current = System.currentTimeMillis();

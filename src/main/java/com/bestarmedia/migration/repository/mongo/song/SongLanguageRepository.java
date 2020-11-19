@@ -20,7 +20,7 @@ public class SongLanguageRepository {
 
     public long cleanAllData() {
         Query query = new Query();
-        query.addCriteria(Criteria.where("code").gte(0));
+//        query.addCriteria(Criteria.where("code").gte(0));
         DeleteResult result = songMongoTemplate.remove(query, SongLanguage.class);
         return result.getDeletedCount();       //返回执行的条
     }

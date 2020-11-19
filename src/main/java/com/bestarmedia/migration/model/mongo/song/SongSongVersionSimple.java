@@ -35,4 +35,7 @@ public class SongSongVersionSimple {
     @Field(value = "publisher")
     private List<CodeName> publisher;//出品权利人
 
+    @Field(value = "versions_hot_sum")
+    private Long versionHotSum;//显示热度
+
 }

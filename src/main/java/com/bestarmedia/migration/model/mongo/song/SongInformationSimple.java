@@ -38,4 +38,6 @@ public class SongInformationSimple {
     @Field(value = "composer")
     private List<CodeName> composer;//曲作者
 
+    @Field(value = "hot_sum")
+    private Long hotSum;//总热度
 }

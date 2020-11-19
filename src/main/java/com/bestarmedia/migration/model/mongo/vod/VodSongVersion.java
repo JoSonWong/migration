@@ -32,26 +32,14 @@ public class VodSongVersion extends Auditing {
     @Field(value = "type")
     private Integer type;//类型  1为视频，2为音画
 
-    @Field(value = "versions_type")
-    private Integer versionsType;//版本类型 (原mysql视频类型id)
-
-    @Field(value = "versions_name")
-    private String versionsName;//版本标签（原：如MV、现场 等)
+    @Field(value = "versions_type_code")
+    private Integer versionsTypeCode;//关联版本表（视频-MV，视频-重制，音画-MV ...）
 
     @Field(value = "source")
     private String source;//来源
 
     @Field(value = "album")
     private CodeName album;//专辑
-
-//    @Field(value = "litigant")
-//    private List<CodeName> litigant;//诉讼权利人
-//
-//    @Field(value = "producer")
-//    private List<CodeName> producer;//制作权利人
-//
-//    @Field(value = "publisher")
-//    private List<CodeName> publisher;//出品权利人
 
     @Field(value = "increase_hot")
     private Long increaseHot;//热度增量

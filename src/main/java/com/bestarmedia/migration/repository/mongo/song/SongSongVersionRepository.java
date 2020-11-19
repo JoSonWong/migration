@@ -53,12 +53,14 @@ public class SongSongVersionRepository {
     public long count() {
         Query query = new Query();
         Criteria criteria = new Criteria();
-        List<Criteria> orCriterias = new ArrayList<>();
-        orCriterias.add(Criteria.where("litigant.code").is(0));
-        orCriterias.add(Criteria.where("producer.code").is(0));
-        orCriterias.add(Criteria.where("publisher.code").is(0));
-        criteria.orOperator(orCriterias.toArray(new Criteria[0]));
-        query.addCriteria(criteria).with(Sort.by(Sort.Direction.ASC, "code"));
+
+//        List<Criteria> orCriterias = new ArrayList<>();
+//        orCriterias.add(Criteria.where("litigant.code").is(0));
+//        orCriterias.add(Criteria.where("producer.code").is(0));
+//        orCriterias.add(Criteria.where("publisher.code").is(0));
+//        criteria.orOperator(orCriterias.toArray(new Criteria[0]));
+
+        query.addCriteria(criteria).with(Sort.by(Sort.Direction.DESC, "versions_hot_sum"));
         return songMongoTemplate.count(query, SongSongVersionSimple.class);
 //        return songMongoTemplate.findAll(SongInformation.class);
     }
@@ -68,12 +70,14 @@ public class SongSongVersionRepository {
         Query query = new Query();
         Pageable pageable = PageRequest.of(currentPage, perPage);
         Criteria criteria = new Criteria();
-        List<Criteria> orCriterias = new ArrayList<>();
-        orCriterias.add(Criteria.where("litigant.code").is(0));
-        orCriterias.add(Criteria.where("producer.code").is(0));
-        orCriterias.add(Criteria.where("publisher.code").is(0));
-        criteria.orOperator(orCriterias.toArray(new Criteria[0]));
-        query.addCriteria(criteria).with(Sort.by(Sort.Direction.ASC, "code"));
+
+//        List<Criteria> orCriterias = new ArrayList<>();
+//        orCriterias.add(Criteria.where("litigant.code").is(0));
+//        orCriterias.add(Criteria.where("producer.code").is(0));
+//        orCriterias.add(Criteria.where("publisher.code").is(0));
+//        criteria.orOperator(orCriterias.toArray(new Criteria[0]));
+
+        query.addCriteria(criteria).with(Sort.by(Sort.Direction.DESC, "versions_hot_sum"));
         return songMongoTemplate.find(query.with(pageable), SongSongVersionSimple.class);
     }
 
@@ -94,7 +98,7 @@ public class SongSongVersionRepository {
 
     public long cleanAllData() {
         Query query = new Query();
-        query.addCriteria(Criteria.where("code").gt(0));
+//        query.addCriteria(Criteria.where("code").gt(0));
         DeleteResult result = songMongoTemplate.remove(query, SongSongVersion.class);
         return result.getDeletedCount();       //返回执行的条
     }
@@ -109,7 +113,7 @@ public class SongSongVersionRepository {
 //        orCriterias.add(Criteria.where("producer.code").is(0));
 //        orCriterias.add(Criteria.where("publisher.code").is(0));
 //        criteria.orOperator(orCriterias.toArray(new Criteria[0]));
-        query.addCriteria(criteria).with(Sort.by(Sort.Direction.ASC, "code"));
+        query.addCriteria(criteria).with(Sort.by(Sort.Direction.DESC, "versions_hot_sum"));
         return songMongoTemplate.find(query.with(pageable), SongSongVersion.class);
     }
 
@@ -122,4 +126,29 @@ public class SongSongVersionRepository {
         UpdateResult updateResult = songMongoTemplate.updateFirst(query, update, SongSongVersion.class);
         return updateResult.getMatchedCount();       //返回执行的条
     }
+
+
+//    public List<SongVersionSimple> findVodSongVersion(Integer songCode) {
+//        List<SongSongVersion> versions = songMongoTemplate.find(new Query(Criteria.where("song_code").is(songCode)), SongSongVersion.class);
+//        List<SongVersionSimple> simples = new ArrayList<>();
+//        if (versions != null) {
+//            versions.forEach(item -> {
+//                SongVersionSimple simple = new SongVersionSimple();
+//                simple.setCode(item.getCode());
+//                simple.setType(item.getType());
+//                simple.setVersionsTypeCode(item.getVersionsType());
+//                simple.setRecommend(item.getRecommend());
+//                simple.setVersionHotSum(item.getVersionHotSum());
+//                simple.setStatus(item.getStatus());
+//                List<FileSimple> fileSimples = new ArrayList<>();
+//                if (item.getVideoFileList() != null) {
+//                    item.getVideoFileList().forEach(it ->
+//                            fileSimples.add(new FileSimple(it.getCode(), it.getFormatName(), it.getStatus())));
+//                }
+//                simple.setFileSimples(fileSimples);
+//                simples.add(simple);
+//            });
+//        }
+//        return simples;
+//    }
 }

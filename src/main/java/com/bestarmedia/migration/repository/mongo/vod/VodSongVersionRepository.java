@@ -1,6 +1,7 @@
 package com.bestarmedia.migration.repository.mongo.vod;
 
 import com.bestarmedia.migration.misc.CommonUtil;
+import com.bestarmedia.migration.model.mongo.Auditing;
 import com.bestarmedia.migration.model.mongo.CodeName;
 import com.bestarmedia.migration.model.mongo.vod.VodSongVersion;
 import com.mongodb.client.result.DeleteResult;
@@ -10,15 +11,14 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.aggregation.AggregationOperation;
+import org.springframework.data.mongodb.core.aggregation.AggregationResults;
 import org.springframework.data.mongodb.core.aggregation.LookupOperation;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Repository;
 
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Repository
 public class VodSongVersionRepository {
@@ -26,6 +26,28 @@ public class VodSongVersionRepository {
     @Autowired
     @Qualifier(value = "vodMongo")
     private MongoTemplate vodMongoTemplate;
+
+    public List<String> findAllFileFormat() {
+        Aggregation aggregationCount = Aggregation.newAggregation(
+                Aggregation.project("file"), Aggregation.group("file.format_name").count().as("sum"));
+        AggregationResults<Auditing> aggregationSumResult = vodMongoTemplate.aggregate(aggregationCount, "vod_song_version", Auditing.class);
+        List<Auditing> versions = aggregationSumResult.getMappedResults();
+        Map<String, Boolean> format = new HashMap<>();
+        if (versions != null) {
+            versions.forEach(item -> {
+                String[] formats = item.get_id().split(",");
+                for (String f : formats) {
+                    format.put(f, true);
+                }
+            });
+        }
+        List<String> formats = new ArrayList<>();
+        Set<Map.Entry<String, Boolean>> entries = format.entrySet();
+        for (Map.Entry<String, Boolean> entry : entries) {
+            formats.add(entry.getKey());
+        }
+        return formats;
+    }
 
     public List<VodSongVersion> findVodSongVersion(Integer songCode) {
         return vodMongoTemplate.find(new Query(Criteria.where("song_code").is(songCode).and("versions_type").is(1).and("status").is(1)), VodSongVersion.class);
@@ -105,10 +127,9 @@ public class VodSongVersionRepository {
 //        return vodMongoTemplate.insert(vodSongVersion);
 //    }
 
-
     public long cleanAllData() {
         Query query = new Query();
-        query.addCriteria(Criteria.where("code").gt(0));
+//        query.addCriteria(Criteria.where("code").gt(0));
         DeleteResult result = vodMongoTemplate.remove(query, VodSongVersion.class);
         return result.getDeletedCount();       //返回执行的条
     }

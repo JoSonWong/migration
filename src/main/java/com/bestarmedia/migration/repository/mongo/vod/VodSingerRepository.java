@@ -80,8 +80,36 @@ public class VodSingerRepository {
 
     public long cleanAllData() {
         Query query = new Query();
-        query.addCriteria(Criteria.where("code").gt(0));
+//        query.addCriteria(Criteria.where("code").gt(0));
         DeleteResult result = vodMongoTemplate.remove(query, VodSinger.class);
         return result.getDeletedCount();       //返回执行的条
     }
+
+
+    public long countWarehousing() {
+        Query query = new Query();
+        Criteria criteria = new Criteria();
+        query.addCriteria(criteria).with(Sort.by(Sort.Direction.DESC, "hot_sum"));
+        return vodMongoTemplate.count(query, VodSinger.class);
+//        return songMongoTemplate.findAll(SongInformation.class);
+    }
+
+
+    public List<VodSinger> indexWarehousingMusician(Integer currentPage, Integer perPage) {
+        Query query = new Query();
+        Criteria criteria = new Criteria();
+        Pageable pageable = PageRequest.of(currentPage, perPage);
+        query.addCriteria(criteria).with(Sort.by(Sort.Direction.DESC, "hot_sum"));
+        return vodMongoTemplate.find(query.with(pageable), VodSinger.class);
+    }
+
+
+//    public long update(Integer singerCode, List<MusicianFileFormat> fileFormats) {
+//        Query query = new Query();
+//        query.addCriteria(Criteria.where("code").is(singerCode));
+//        Update update = new Update();
+//        update.set("file_formats", fileFormats);
+//        UpdateResult updateResult = vodMongoTemplate.updateMulti(query, update, VodSinger.class);
+//        return updateResult.getMatchedCount();       //返回执行的条
+//    }
 }
