@@ -183,7 +183,7 @@ public class MongoSongMusicianScannerService {
                             .replace("(", "|").replace(")", "|").replace("（", "|").replace("）", "|").replace(",", "|").replace("，", "|")//AKB48(毛唯嘉,沈莹,叶知恩)
                             .replace("V.S", "|").replace("&", "|").replace("\"", "|").replace("“", "|").replace("”", "|");
                     if (CommonUtil.isAllChinese(musicianName)) {//中文名带空格说明是分隔符
-                        musicianName = musicianName.replace(" ", "|");
+                        musicianName = musicianName.replace(" ", "|").replaceAll("\\s*", "|");
                     }
                     if (CommonUtil.isContainChinese(musicianName)) {
                         musicianName = musicianName.replace("V.S", "|").replace("v.s", "|").replace("VS", "|").replace("vs", "|");

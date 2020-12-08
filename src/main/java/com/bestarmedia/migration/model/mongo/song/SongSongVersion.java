@@ -47,7 +47,7 @@ public class SongSongVersion extends SongAuditing {
     private String source;//来源
 
     @Field(value = "album")
-    private CodeName album;//专辑
+    private List<CodeName> album;//专辑
 
     @Field(value = "litigant")
     private List<CodeName> litigant;//诉讼权利人
@@ -79,7 +79,6 @@ public class SongSongVersion extends SongAuditing {
     @Field(value = "file")
     private List<VideoFile> videoFileList;//文件
 
-
     @Field(value = "note_one")
     private String noteOne;//备注1
 
@@ -88,6 +87,5 @@ public class SongSongVersion extends SongAuditing {
 
     @Field(value = "note_three")
     private String noteThree;//备注3
-
 
 }

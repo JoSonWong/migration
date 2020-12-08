@@ -76,14 +76,27 @@ public class CommonUtil {
     }
 
     public static boolean isAllChinese(String name) {
-        int n;
+        char[] cTemp = name.toCharArray();
         for (int i = 0; i < name.length(); i++) {
-            n = (int) name.charAt(i);
-            if (!(19968 <= n && n < 40869)) {
+            char ch = cTemp[i];
+            if (!Character.isWhitespace(ch) && !isChinese(ch)) {//不比对空格符
                 return false;
             }
         }
         return true;
+    }
+
+    public static boolean isChinese(char c) {
+        Character.UnicodeBlock ub = Character.UnicodeBlock.of(c);
+        if (ub == Character.UnicodeBlock.CJK_UNIFIED_IDEOGRAPHS
+                || ub == Character.UnicodeBlock.CJK_COMPATIBILITY_IDEOGRAPHS
+                || ub == Character.UnicodeBlock.CJK_UNIFIED_IDEOGRAPHS_EXTENSION_A
+                || ub == Character.UnicodeBlock.GENERAL_PUNCTUATION
+                || ub == Character.UnicodeBlock.CJK_SYMBOLS_AND_PUNCTUATION
+                || ub == Character.UnicodeBlock.HALFWIDTH_AND_FULLWIDTH_FORMS) {
+            return true;
+        }
+        return false;
     }
 
 

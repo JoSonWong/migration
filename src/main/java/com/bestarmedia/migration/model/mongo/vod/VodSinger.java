@@ -36,6 +36,9 @@ public class VodSinger extends Auditing {
     @Field(value = "hot")
     private Long hot;//热度
 
+    @Field(value = "hot_sum")
+    private Long hotSum;//热度
+
     @Field(value = "sex")
     private Integer sex;//性别 1 男 2 女  3混合组合
 

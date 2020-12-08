@@ -36,13 +36,16 @@ spring:
     mongodb:
       primary:
         database: bestarmedia_vod
-        uri: 192.168.1.146:27017
+        uri: 192.168.1.147:27017
       secondary:
         database: bestarmedia_song
-        uri: 192.168.1.146:27017
+        uri: 192.168.1.147:27017
 # mybatis配置
 mybatis:
   #  config-location: # mybatis配置文件所在
   mapper-locations: classpath:mapper/*.xml
   # mysql实体类所在目录
   type-aliases-package: com.bestarmedia.migration.model.mysql
+server:
+  address: 0.0.0.0
+  port: 8089

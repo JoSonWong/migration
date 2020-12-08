@@ -71,12 +71,10 @@ public class MigrateMongoSong2VodService extends MigrateBase {
         types.clear();
         formats.clear();
         long currentTimeMillis = System.currentTimeMillis();
-//        mergeLanguage();
-//        mergeArea();
-//        mergeSongType();
-//        migrateMusician();
-//        //        migrateSong();
-        System.out.println("清除歌曲信息数量:" + vodSongRepository.cleanAllData());
+        mergeLanguage();
+        mergeArea();
+        mergeSongType();
+        migrateMusician();
 
         String[] typeFormats = typeFormat.split(";");
         for (String tf : typeFormats) {
@@ -193,8 +191,11 @@ public class MigrateMongoSong2VodService extends MigrateBase {
             vodSinger.setSimplicity(item.getSimplicity());
             vodSinger.setWordCount(item.getWordCount());
             vodSinger.setHot(item.getHot());
+            vodSinger.setHotSum(item.getHotSum());
             vodSinger.setSex(item.getSex());
+            vodSinger.setBirthday(item.getBirthday());
             vodSinger.setRole(item.getRole());
+            vodSinger.setPart(item.getPart());
             vodSinger.setImgFilePath(item.getImgFilePath());
             vodSinger.setStatus(item.getStatus());
             vodSinger.setAlias(item.getAlias());
@@ -208,6 +209,7 @@ public class MigrateMongoSong2VodService extends MigrateBase {
     }
 
     public String migrateVersion() {
+        System.out.println("清除歌曲信息数量:" + vodSongRepository.cleanAllData());
         System.out.println("清除版本信息数量:" + vodSongVersionRepository.cleanAllData());
         versionCount = 0;
         long cur = System.currentTimeMillis();
@@ -238,11 +240,13 @@ public class MigrateMongoSong2VodService extends MigrateBase {
                 if (!files.isEmpty()) {
                     VodSongVersion version = new VodSongVersion();
                     version.setCode(item.getCode());
-                    version.setSongCode(item.getSong().getCode());
+                    version.setSong(item.getSong());
                     version.setSongCodeOld(item.getSongCodeOld());
+                    version.setSinger(item.getSinger());
                     version.setType(item.getType());
                     version.setVersionsTypeCode(item.getVersionsType());
                     version.setSource(item.getSource());
+                    version.setAlbum(item.getAlbum());
                     version.setIncreaseHot(item.getIncreaseHot());
                     version.setVersionHot(item.getVersionHot());
                     version.setVersionHotSum(item.getVersionHotSum());
@@ -254,16 +258,13 @@ public class MigrateMongoSong2VodService extends MigrateBase {
 
                     VodSongVersion save = vodSongVersionRepository.insert(version);
                     versionCount++;
-                    VodSong vodSong = vodSongRepository.findByCodeNotStatus(save.getSongCode());
-                    if (vodSong == null) {
-                        SongInformation songInformation = songInformationRepository.findByCode(save.getSongCode());
-                        if (songInformation != null) {
-                            saveVodSong(songInformation);
-                        }
+                    SongInformation songInformation;
+                    if (vodSongRepository.findByCodeNotStatus(save.getSong().getCode()) == null
+                            && (songInformation = songInformationRepository.findByCode(save.getSong().getCode())) != null) {
+                        saveVodSong(songInformation);
                     }
                 }
             }
-
         });
     }
 
