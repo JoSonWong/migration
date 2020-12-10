@@ -79,7 +79,7 @@ public class CommonUtil {
         char[] cTemp = name.toCharArray();
         for (int i = 0; i < name.length(); i++) {
             char ch = cTemp[i];
-            if (!Character.isWhitespace(ch) && !isChinese(ch)) {//不比对空格符
+            if (!isChinese(ch)) {//不比对空格符
                 return false;
             }
         }

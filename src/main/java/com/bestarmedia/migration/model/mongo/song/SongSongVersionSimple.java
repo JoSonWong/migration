@@ -23,6 +23,9 @@ public class SongSongVersionSimple {
     @Field(value = "code")
     private Integer code;//id
 
+    @Field(value = "song")
+    private CodeName song;//歌曲id+歌名
+
     @Field(value = "singer")
     private List<CodeName> singer;//歌星
 

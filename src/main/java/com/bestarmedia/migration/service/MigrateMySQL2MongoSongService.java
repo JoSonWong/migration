@@ -164,7 +164,7 @@ public class MigrateMySQL2MongoSongService extends MigrateBase {
     }
 
 
-    private String migrateMusician() {
+    public String migrateMusician() {
         long delCount = songMusicianRepository.cleanAllData();
         System.out.println("清除音乐人信息数量量:" + delCount);
         musicianCount = 0;
@@ -345,7 +345,7 @@ public class MigrateMySQL2MongoSongService extends MigrateBase {
     }
 
 
-    private String migrateSong() {
+    public String migrateSong() {
         System.out.println("清除版本信息数量:" + songSongVersionRepository.cleanAllData());
         System.out.println("清除歌曲信息数量:" + songInformationRepository.cleanAllData());
         versionCount = 0;

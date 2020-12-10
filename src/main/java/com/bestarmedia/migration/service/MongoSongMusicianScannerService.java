@@ -57,17 +57,13 @@ public class MongoSongMusicianScannerService {
         for (int i = 0; i < size; i++) {
             List<SongSongVersionSimple> list = songSongVersionRepository.findSong(i, pageSize);
             System.out.println("获取版本信息，分页：" + i + " 条数：" + pageSize + " 数据：" + list.size());
-
             list.forEach(item -> {
                 try {
                     boolean needUpdate = false;
-                    List<CodeName> singer = item.getSinger();
-                    if (singer != null && !singer.isEmpty()) {
-                        List<CodeName> codeNames = createMusicians(1, singer);
-                        if (codeNames != null) {
-                            item.setSinger(codeNames);
-                            needUpdate = true;
-                        }
+                    SongInformation information;
+                    if ((information = songSongVersionRepository.findByCode(item.getSong().getCode())) != null) {
+                        item.setSinger(information.getSinger());
+                        needUpdate = true;
                     }
                     List<CodeName> litigant = item.getLitigant();
                     if (litigant != null && !litigant.isEmpty()) {
@@ -183,7 +179,7 @@ public class MongoSongMusicianScannerService {
                             .replace("(", "|").replace(")", "|").replace("（", "|").replace("）", "|").replace(",", "|").replace("，", "|")//AKB48(毛唯嘉,沈莹,叶知恩)
                             .replace("V.S", "|").replace("&", "|").replace("\"", "|").replace("“", "|").replace("”", "|");
                     if (CommonUtil.isAllChinese(musicianName)) {//中文名带空格说明是分隔符
-                        musicianName = musicianName.replace(" ", "|").replaceAll("\\s*", "|");
+                        musicianName = musicianName.replace(" ", "|");
                     }
                     if (CommonUtil.isContainChinese(musicianName)) {
                         musicianName = musicianName.replace("V.S", "|").replace("v.s", "|").replace("VS", "|").replace("vs", "|");

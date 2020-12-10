@@ -1,5 +1,6 @@
 package com.bestarmedia.migration.repository.mongo.song;
 
+import com.bestarmedia.migration.model.mongo.song.SongInformation;
 import com.bestarmedia.migration.model.mongo.song.SongSongVersion;
 import com.bestarmedia.migration.model.mongo.song.SongSongVersionSimple;
 import com.mongodb.client.result.DeleteResult;
@@ -125,6 +126,12 @@ public class SongSongVersionRepository {
         update.set("issue_time", date);
         UpdateResult updateResult = songMongoTemplate.updateFirst(query, update, SongSongVersion.class);
         return updateResult.getMatchedCount();       //返回执行的条
+    }
+
+    public SongInformation findByCode(Integer code) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("code").is(code));
+        return songMongoTemplate.findOne(query, SongInformation.class);       //返回执行的条
     }
 
 
