@@ -60,11 +60,6 @@ public class MongoSongMusicianScannerService {
             list.forEach(item -> {
                 try {
                     boolean needUpdate = false;
-                    SongInformation information;
-                    if ((information = songSongVersionRepository.findByCode(item.getSong().getCode())) != null) {
-                        item.setSinger(information.getSinger());
-                        needUpdate = true;
-                    }
                     List<CodeName> litigant = item.getLitigant();
                     if (litigant != null && !litigant.isEmpty()) {
                         List<CodeName> codeNames = createMusicians(4, litigant);
@@ -114,7 +109,6 @@ public class MongoSongMusicianScannerService {
         for (int i = 0; i < size; i++) {
             List<SongInformationSimple> list = songInformationRepository.findSong(i, pageSize);
             System.out.println("获取歌曲信息，分页：" + i + " 条数：" + pageSize + " 数据：" + list.size());
-
             list.forEach(item -> {
                 try {
                     boolean needUpdate = false;
@@ -123,9 +117,15 @@ public class MongoSongMusicianScannerService {
                         List<CodeName> codeNames = createMusicians(1, singer);
                         if (codeNames != null) {
                             item.setSinger(codeNames);
+                            //更新版本中的歌星信息
+                            long updateVersionTime = System.currentTimeMillis();
+                            long updateVersionCount = songSongVersionRepository.updateSinger(item.getCode(), item.getSinger());
+                            System.out.println("更新版本中歌星信息：" + CommonUtil.OBJECT_MAPPER.writeValueAsString(item.getSinger())
+                                    + " 更新数量：" + updateVersionCount + " 耗时：" + (System.currentTimeMillis() - updateVersionTime) / 1000);
                             needUpdate = true;
                         }
                     }
+
                     List<CodeName> lyricist = item.getLyricist();
                     if (lyricist != null && !lyricist.isEmpty()) {
                         List<CodeName> codeNames = createMusicians(2, lyricist);

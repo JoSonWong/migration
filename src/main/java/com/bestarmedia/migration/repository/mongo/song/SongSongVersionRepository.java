@@ -1,5 +1,6 @@
 package com.bestarmedia.migration.repository.mongo.song;
 
+import com.bestarmedia.migration.model.mongo.CodeName;
 import com.bestarmedia.migration.model.mongo.song.SongInformation;
 import com.bestarmedia.migration.model.mongo.song.SongSongVersion;
 import com.bestarmedia.migration.model.mongo.song.SongSongVersionSimple;
@@ -37,11 +38,19 @@ public class SongSongVersionRepository {
 //        return songMongoTemplate.insert(vodSongVersion);
 //    }
 
+    public long updateSinger(int songCode, List<CodeName> singer) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("song.code").is(songCode));
+        Update update = new Update();
+        update.set("singer", singer);
+        UpdateResult updateResult = songMongoTemplate.updateMulti(query, update, SongSongVersion.class);
+        return updateResult.getMatchedCount();       //返回执行的条
+    }
+
     public long update(SongSongVersionSimple version) {
         Query query = new Query();
         query.addCriteria(Criteria.where("code").is(version.getCode()));
         Update update = new Update();
-        update.set("singer", version.getSinger());
         update.set("litigant", version.getLitigant());
         update.set("producer", version.getProducer());
         update.set("publisher", version.getPublisher());
