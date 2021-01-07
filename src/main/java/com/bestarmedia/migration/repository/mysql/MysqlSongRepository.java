@@ -106,4 +106,7 @@ public interface MysqlSongRepository extends JpaRepository<Song, Integer>, JpaSp
 
     @Query(value = "select count(*) from vod_song as s where s.status=1 and s.deleted_at is NULL ORDER BY s.song_name ASC, s.singer ASC,s.video_type ASC ", nativeQuery = true)
     Integer getSongSameNameCount();
+
+
+    List<Song> findAllBySongName(String songName);
 }

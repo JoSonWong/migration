@@ -4,10 +4,11 @@ package com.bestarmedia.migration.service;
 import com.bestarmedia.migration.misc.CommonUtil;
 import com.bestarmedia.migration.model.mongo.CodeName;
 import com.bestarmedia.migration.model.mongo.SearchKeyword;
-import com.bestarmedia.migration.model.mongo.song.*;
+import com.bestarmedia.migration.model.mongo.song.SongInformationSimple;
+import com.bestarmedia.migration.model.mongo.song.SongMusician;
+import com.bestarmedia.migration.model.mongo.song.SongSongVersionSimple;
 import com.bestarmedia.migration.repository.mongo.song.SongInformationRepository;
 import com.bestarmedia.migration.repository.mongo.song.SongMusicianRepository;
-import com.bestarmedia.migration.repository.mongo.song.SongSongTypeRepository;
 import com.bestarmedia.migration.repository.mongo.song.SongSongVersionRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +17,7 @@ import org.springframework.util.StringUtils;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
 @Slf4j
@@ -24,7 +26,7 @@ public class MongoSongMusicianScannerService {
     private final SongMusicianRepository songMusicianRepository;
     private final SongSongVersionRepository songSongVersionRepository;
     private final SongInformationRepository songInformationRepository;
-    private final SongSongTypeRepository songTypeRepository;
+    //    private final SongSongTypeRepository songTypeRepository;
     private int createdMusicianCount = 0;
     private int updatedMusicianCount = 0;
 
@@ -32,12 +34,13 @@ public class MongoSongMusicianScannerService {
     @Autowired
     public MongoSongMusicianScannerService(SongMusicianRepository songMusicianRepository,
                                            SongSongVersionRepository songSongVersionRepository,
-                                           SongInformationRepository songInformationRepository,
-                                           SongSongTypeRepository songTypeRepository) {
+                                           SongInformationRepository songInformationRepository
+//                                           SongSongTypeRepository songTypeRepository
+    ) {
         this.songMusicianRepository = songMusicianRepository;
         this.songSongVersionRepository = songSongVersionRepository;
         this.songInformationRepository = songInformationRepository;
-        this.songTypeRepository = songTypeRepository;
+//        this.songTypeRepository = songTypeRepository;
     }
 
     public void scanMusician() {
@@ -47,6 +50,7 @@ public class MongoSongMusicianScannerService {
 
 
     public String scanVersionMusician() {
+        AtomicInteger finished = new AtomicInteger(0);
         long current = System.currentTimeMillis();
         createdMusicianCount = 0;
         updatedMusicianCount = 0;
@@ -84,9 +88,10 @@ public class MongoSongMusicianScannerService {
                             needUpdate = true;
                         }
                     }
+                    finished.getAndIncrement();
                     if (needUpdate) {
-                        long updateCount = songSongVersionRepository.update(item);
-                        System.out.println("更新版本信息：" + CommonUtil.OBJECT_MAPPER.writeValueAsString(item) + " 更新数量：" + updateCount);
+                        songSongVersionRepository.update(item);
+                        System.out.println("更新版本信息：" + CommonUtil.OBJECT_MAPPER.writeValueAsString(item) + " 进度：[" + finished.get() + "/" + count + "]");
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -99,6 +104,7 @@ public class MongoSongMusicianScannerService {
     }
 
     public String scanSongMusician() {
+        AtomicInteger finished = new AtomicInteger(0);
         long current = System.currentTimeMillis();
         createdMusicianCount = 0;
         updatedMusicianCount = 0;
@@ -111,6 +117,7 @@ public class MongoSongMusicianScannerService {
             System.out.println("获取歌曲信息，分页：" + i + " 条数：" + pageSize + " 数据：" + list.size());
             list.forEach(item -> {
                 try {
+
                     boolean needUpdate = false;
                     List<CodeName> singer = item.getSinger();
                     if (singer != null && !singer.isEmpty()) {
@@ -142,21 +149,10 @@ public class MongoSongMusicianScannerService {
                             needUpdate = true;
                         }
                     }
+                    finished.getAndIncrement();
                     if (needUpdate) {
-                        if (item.getSongType() != null) {
-                            SongType songType = new SongType(item.getSongType().getCode(), item.getSongType().getName(), item.getSongType().getCode(), item.getSongType().getName());
-                            SongSongType songSongType = songTypeRepository.findByCode(songType.getCode());
-                            if (songSongType != null && songSongType.getParentCode() > 0) {
-                                SongSongType parent = songTypeRepository.findByCode(songType.getParentCode());
-                                if (parent != null) {
-                                    songType.setParentCode(parent.getCode());
-                                    songType.setParentName(parent.getName());
-                                }
-                            }
-                            item.setSongType(songType);
-                        }
-                        long updateCount = songInformationRepository.update(item);
-                        System.out.println("更新歌曲信息：" + CommonUtil.OBJECT_MAPPER.writeValueAsString(item) + " 更新数量：" + updateCount);
+                        songInformationRepository.update(item);
+                        System.out.println("更新歌曲信息：" + CommonUtil.OBJECT_MAPPER.writeValueAsString(item) + " 进度：[" + finished.get() + "/" + count + "]");
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
