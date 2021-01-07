@@ -173,7 +173,7 @@ public class MongoSongMusicianScannerService {
         AtomicBoolean atomicBoolean = new AtomicBoolean(false);
         codeNames.forEach(item -> {
             try {
-                if (!StringUtils.isEmpty(item.getName())) {
+                if (!StringUtils.isEmpty(item.getName().trim())) {
                     String musicianName = item.getName().trim().replace("/", "|").replace("\\", "|")//张学友/刘德华 或 张学友\刘德华
                             .replace("丨", "|").replace("｜", "|").replace("、", "|").replace(";", "|").replace("；", "|")
                             .replace("(", "|").replace(")", "|").replace("（", "|").replace("）", "|").replace(",", "|").replace("，", "|")//AKB48(毛唯嘉,沈莹,叶知恩)
@@ -186,39 +186,43 @@ public class MongoSongMusicianScannerService {
                     }
                     String[] musicianNames = musicianName.split("\\|");
                     for (String n : musicianNames) {
-                        String name = CommonUtil.deleteSpaceAndUpperFirst(n);
-                        SongMusician musician = songMusicianRepository.findSingerByName(name);
-                        if (musician == null) {
-                            SongMusician insertSave = songMusicianRepository.insert(createSongMusician(type, name));
-                            Integer code = insertSave.getCode();
-                            String mn = insertSave.getMusicianName();
-                            System.out.println("创建音乐人：" + CommonUtil.OBJECT_MAPPER.writeValueAsString(insertSave));
-                            updateSearchKeywords(insertSave);
-                            createdMusicianCount++;
-                            names.add(new CodeName(code, mn));
-                            if (!item.getCode().equals(insertSave.getCode())) {
-                                atomicBoolean.set(true);
-                            }
-                        } else {
-                            List<Integer> types = musician.getMusicianType();
-                            boolean exitsType = false;
-                            for (Integer t : types) {
-                                if (t == type) {
-                                    exitsType = true;
+                        String name = CommonUtil.deleteSpaceAndUpperFirst(n).trim();
+                        if (!StringUtils.isEmpty(name)) {
+                            SongMusician musician = songMusicianRepository.findSingerByName(name);
+                            if (musician == null) {
+                                SongMusician insertSave = songMusicianRepository.insert(createSongMusician(type, name));
+                                Integer code = insertSave.getCode();
+                                String mn = insertSave.getMusicianName();
+                                System.out.println("创建音乐人：" + CommonUtil.OBJECT_MAPPER.writeValueAsString(insertSave));
+                                updateSearchKeywords(insertSave);
+                                createdMusicianCount++;
+                                names.add(new CodeName(code, mn));
+                                if (!item.getCode().equals(insertSave.getCode())) {
+                                    atomicBoolean.set(true);
+                                }
+                            } else {
+                                List<Integer> types = musician.getMusicianType();
+                                boolean exitsType = false;
+                                for (Integer t : types) {
+                                    if (t == type) {
+                                        exitsType = true;
+                                    }
+                                }
+                                if (!exitsType) {
+                                    types.add(type);
+                                    types.sort(Comparator.naturalOrder());
+                                    musician.setMusicianType(types);
+                                    long updateCount = songMusicianRepository.updateMusicianTypes(musician.getCode(), types);
+                                    System.out.println("更新音乐人类型 code：" + musician.getCode() + " 更新条数：" + updateCount + " 类型：" + CommonUtil.OBJECT_MAPPER.writeValueAsString(types));
+                                    updatedMusicianCount++;
+                                }
+                                names.add(new CodeName(musician.getCode(), musician.getMusicianName()));
+                                if (!item.getCode().equals(musician.getCode())) {
+                                    atomicBoolean.set(true);
                                 }
                             }
-                            if (!exitsType) {
-                                types.add(type);
-                                types.sort(Comparator.naturalOrder());
-                                musician.setMusicianType(types);
-                                long updateCount = songMusicianRepository.updateMusicianTypes(musician.getCode(), types);
-                                System.out.println("更新音乐人类型 code：" + musician.getCode() + " 更新条数：" + updateCount + " 类型：" + CommonUtil.OBJECT_MAPPER.writeValueAsString(types));
-                                updatedMusicianCount++;
-                            }
-                            names.add(new CodeName(musician.getCode(), musician.getMusicianName()));
-                            if (!item.getCode().equals(musician.getCode())) {
-                                atomicBoolean.set(true);
-                            }
+                        } else {
+                            atomicBoolean.set(true);
                         }
                     }
                 } else {//空名字的音乐人
