@@ -221,6 +221,8 @@ public class MongoSongMusicianScannerService {
                             }
                         }
                     }
+                } else {//空名字的音乐人
+                    atomicBoolean.set(true);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
