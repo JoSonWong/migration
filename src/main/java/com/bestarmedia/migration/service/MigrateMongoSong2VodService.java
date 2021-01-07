@@ -135,7 +135,7 @@ public class MigrateMongoSong2VodService extends MigrateBase {
                 language.setCode(item.getCode());
                 language.setName(item.getName());
                 language.setParentCode(item.getParentCode());
-                language.setIsShow(item.getParentCode());
+                language.setIsShow(item.getIsShow());
                 language.setSort(item.getSort());
                 language.setCreatedAt(item.getCreatedAt());
                 language.setUpdatedAt(item.getUpdatedAt());
@@ -316,6 +316,7 @@ public class MigrateMongoSong2VodService extends MigrateBase {
         vodSong.setHotSum(item.getHotSum());
         vodSong.setRecommend(item.getRecommend());
         vodSong.setStatus(item.getStatus());
+        vodSong.setDiskFileStatus(1);
         vodSong.setCreatedAt(item.getCreatedAt());
         vodSong.setUpdatedAt(item.getUpdatedAt());
 //            vodSong.setSongVersionSimples(songSongVersionRepository.findVodSongVersion(vodSong.getCode()));

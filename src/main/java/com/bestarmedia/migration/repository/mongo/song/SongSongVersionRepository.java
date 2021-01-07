@@ -41,6 +41,7 @@ public class SongSongVersionRepository {
         Query query = new Query();
         query.addCriteria(Criteria.where("code").is(version.getCode()));
         Update update = new Update();
+        update.set("singer", version.getSinger());
         update.set("litigant", version.getLitigant());
         update.set("producer", version.getProducer());
         update.set("publisher", version.getPublisher());

@@ -174,7 +174,7 @@ public class MongoSongMusicianScannerService {
         codeNames.forEach(item -> {
             try {
                 if (!StringUtils.isEmpty(item.getName())) {
-                    String musicianName = item.getName().replace("/", "|").replace("\\", "|")//张学友/刘德华 或 张学友\刘德华
+                    String musicianName = item.getName().trim().replace("/", "|").replace("\\", "|")//张学友/刘德华 或 张学友\刘德华
                             .replace("丨", "|").replace("｜", "|").replace("、", "|").replace(";", "|").replace("；", "|")
                             .replace("(", "|").replace(")", "|").replace("（", "|").replace("）", "|").replace(",", "|").replace("，", "|")//AKB48(毛唯嘉,沈莹,叶知恩)
                             .replace("V.S", "|").replace("&", "|").replace("\"", "|").replace("“", "|").replace("”", "|");
