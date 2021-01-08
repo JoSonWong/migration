@@ -25,8 +25,19 @@ public class FillDataController {
     public JsonResponse fillData(@RequestParam(value = "from", defaultValue = "0") Integer from,
                                  @RequestParam(value = "to", defaultValue = "0") Integer to) {
         HashMap<String, String> map = new HashMap<>();
-        map.put("tip", fillDataService.fill(from, to));
-        map.put("tip", fillDataService.fillYJX(from, to));
+        map.put("tip_total", fillDataService.fillTotal(from, to));
+        map.put("tip_ly", fillDataService.fillLY(from, to));
+        map.put("tip_yjx", fillDataService.fillYJX(from, to));
+        map.put("tip_bns1", fillDataService.fillBNS(from, to));
+
+        return JsonResponseHandler.success(map);
+    }
+
+    @GetMapping("/v7.0/migration/fill-data/bns")
+    public JsonResponse fillDataBNS(@RequestParam(value = "from", defaultValue = "0") Integer from,
+                                    @RequestParam(value = "to", defaultValue = "0") Integer to) {
+        HashMap<String, String> map = new HashMap<>();
+        map.put("tip_bns1", fillDataService.fillBNS(from, to));
         return JsonResponseHandler.success(map);
     }
 
@@ -43,6 +54,14 @@ public class FillDataController {
                                    @RequestParam(value = "to", defaultValue = "0") Integer to) {
         HashMap<String, String> map = new HashMap<>();
         map.put("tip", fillDataService.fillLY(from, to));
+        return JsonResponseHandler.success(map);
+    }
+
+    @GetMapping("/v7.0/migration/fill-data/total")
+    public JsonResponse fillDataTotal(@RequestParam(value = "from", defaultValue = "0") Integer from,
+                                      @RequestParam(value = "to", defaultValue = "0") Integer to) {
+        HashMap<String, String> map = new HashMap<>();
+        map.put("tip", fillDataService.fillTotal(from, to));
         return JsonResponseHandler.success(map);
     }
 }

@@ -101,6 +101,7 @@ public class CommonUtil {
 
 
     public static String deleteParenthesesEnd(String songName) {
+        songName = songName.trim();
         if (songName.endsWith(")") && songName.contains("(")) {//处理括号结尾
             String name = songName.substring(0, songName.lastIndexOf("("));
             if (!StringUtils.isEmpty(name)) {
@@ -117,8 +118,8 @@ public class CommonUtil {
 
 
     public static String deleteSpecialChar(String text) {
-        return text.replace("\"", "").replace("“", "").replace("”", "")
+        return text.trim().replace("\"", "").replace("“", "").replace("”", "")
                 .replace("(", "").replace(")", "").replace("（", "").replace("）", "")
-                .replace("/", "|").replace("｜", "|").replace("，", "|").replace("&", "|");
+                .replace("/", "|").replace("｜", "|").replace("，", "|").replace("&", "|").replace("、", "|");
     }
 }

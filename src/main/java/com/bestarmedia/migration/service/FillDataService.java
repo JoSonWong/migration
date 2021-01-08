@@ -2,6 +2,7 @@ package com.bestarmedia.migration.service;
 
 
 import com.bestarmedia.migration.misc.CommonUtil;
+import com.bestarmedia.migration.misc.DateUtil;
 import com.bestarmedia.migration.model.mongo.CodeName;
 import com.bestarmedia.migration.model.mysql.Musician;
 import com.bestarmedia.migration.model.mysql.Song;
@@ -27,6 +28,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
 public class FillDataService {
@@ -46,75 +48,46 @@ public class FillDataService {
         this.mysqlMusicianRepository = mysqlMusicianRepository;
     }
 
-    public String fill(Integer indexFrom, Integer indexTo) {
-        int updateNoIdSongCount = 0;
-        int updateNoIdVersionCount = 0;
-        XSSFWorkbook wb;
-        XSSFSheet sheet;
+    private void fill2Mysql(Song song, List<CodeName> singers, List<CodeName> lyricists, List<CodeName> composers,
+                            List<CodeName> litigants, List<CodeName> producers, List<CodeName> publishers, Date releaseDate, String album, String version) {
         try {
-            //excel模板路径
-            File cfgFile = ResourceUtils.getFile(ResourceUtils.CLASSPATH_URL_PREFIX + "templates/song_message.xlsx");
-            InputStream in = new FileInputStream(cfgFile);
-            //读取excel模板
-            wb = new XSSFWorkbook(in);
-            sheet = wb.getSheetAt(0);
-            int size = sheet.getPhysicalNumberOfRows();
-            int from = 1;
-            if (indexFrom > 0) {
-                from = indexFrom;
-            }
-            if (indexTo > 0) {
-                size = indexTo;
-            }
-            //循环取每行的数据
-            for (int row = from; row < size; row++) {
-                String id = getString(sheet.getRow(row).getCell(0));
-                String songName = CommonUtil.deleteParenthesesEnd(CommonUtil.deleteSpaceAndUpperFirst(getString(sheet.getRow(row).getCell(1))));
-                String singer = CommonUtil.deleteSpecialChar(getString(sheet.getRow(row).getCell(2)));
-                String lyricist = CommonUtil.deleteSpecialChar(getString(sheet.getRow(row).getCell(3)));
-                String composer = CommonUtil.deleteSpecialChar(getString(sheet.getRow(row).getCell(4)));
-                String litigant = CommonUtil.deleteSpecialChar(getString(sheet.getRow(row).getCell(5)));
-                String producer = CommonUtil.deleteSpecialChar(getString(sheet.getRow(row).getCell(6)));
-                String publisher = CommonUtil.deleteSpecialChar(getString(sheet.getRow(row).getCell(7)));
-                String releaseTime = CommonUtil.deleteSpecialChar(getString(sheet.getRow(row).getCell(8)));
-                System.out.println("第" + row + "行，id：" + id + " 歌名：" + songName + " 歌星：" + singer + " 词：" + lyricist + " 曲：" + composer
-                        + " 诉讼：" + litigant + " 制作：" + producer + " 出品：" + publisher + " 发行日期：" + releaseTime);
-                List<CodeName> singers = handlerMusicianMySQL(1, singer);
-                List<CodeName> lyricists = handlerMusicianMySQL(2, lyricist);
-                List<CodeName> composers = handlerMusicianMySQL(3, composer);
-                List<CodeName> litigants = handlerMusicianMySQL(4, litigant);
-                List<CodeName> producers = handlerMusicianMySQL(5, producer);
-                List<CodeName> publishers = handlerMusicianMySQL(6, publisher);
-                fill2Mysql(id, songName, singers, lyricists, composers, litigants, producers, publishers);
-            }
-            String tip = "更新歌曲总数：" + updateNoIdSongCount + " 更新版本总数：" + updateNoIdVersionCount;
-            System.out.println(tip);
-            return tip;
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return "";
-    }
-
-    private void fill2Mysql(String id, String songName, List<CodeName> singers, List<CodeName> lyricists, List<CodeName> composers,
-                            List<CodeName> litigants, List<CodeName> producers, List<CodeName> publishers) {
-        if (!StringUtils.isEmpty(id)) {
-            try {
-                Song song = mysqlSongRepository.findSongBySongId(Integer.valueOf(id));
-                if (song != null) {
-                    song.setSongName(songName);
-                    boolean update = false;
-                    if (singers != null && !singers.isEmpty()) {
-                        List<Integer> ids = new ArrayList<>();
-                        List<String> names = new ArrayList<>();
-                        singers.forEach(item -> {
-                            ids.add(item.getCode());
-                            names.add(item.getName());
+            if (song != null) {
+                boolean update = false;
+                boolean isContainSinger = false;//是否包含歌星
+                boolean isMatchSinger = false;//是否完全匹配歌星
+                if (singers != null && !singers.isEmpty()) {
+                    List<String> singerNameList = new ArrayList<>();
+                    try {
+                        List<String> singerNames = CommonUtil.OBJECT_MAPPER.readValue(song.getSinger(), new TypeReference<List<String>>() {
                         });
-                        song.setSingerMid(CommonUtil.OBJECT_MAPPER.writeValueAsString(ids));
-                        song.setSinger(CommonUtil.OBJECT_MAPPER.writeValueAsString(names));
-                        update = true;
+                        for (String e : singerNames) {
+                            if (e.contains("|")) {
+                                for (String singer : e.split("\\|")) {
+                                    String s = singer.trim();
+                                    if (!StringUtils.isEmpty(s)) {
+                                        singerNameList.add(s);
+                                    }
+                                }
+                            } else if (e.contains("｜")) {
+                                for (String singer : e.split("｜")) {
+                                    String s = singer.trim();
+                                    if (!StringUtils.isEmpty(s)) {
+                                        singerNameList.add(s);
+                                    }
+                                }
+                            } else {
+                                singerNameList.add(e);
+                            }
+                        }
+                    } catch (Exception e) {//转换出错，说明数据库数据格式存储错误，纠正过来
+
                     }
+                    int matchCount = matchElement(singers, singerNameList);
+                    isContainSinger = matchCount > 0;
+                    isMatchSinger = matchCount == singers.size() && singerNameList.size() == singers.size();
+
+                }
+                if (isContainSinger) {//其中一个歌星匹配，歌星词曲信息
                     if (lyricists != null && !lyricists.isEmpty()) {
                         List<Integer> ids = new ArrayList<>();
                         List<String> names = new ArrayList<>();
@@ -137,29 +110,7 @@ public class FillDataService {
                         song.setComposer(CommonUtil.OBJECT_MAPPER.writeValueAsString(names));
                         update = true;
                     }
-                    if (litigants != null && !litigants.isEmpty()) {
-                        List<Integer> ids = new ArrayList<>();
-                        List<String> names = new ArrayList<>();
-                        litigants.forEach(item -> {
-                            ids.add(item.getCode());
-                            names.add(item.getName());
-                        });
-                        song.setLitigantMid(CommonUtil.OBJECT_MAPPER.writeValueAsString(ids));
-                        song.setLitigant(CommonUtil.OBJECT_MAPPER.writeValueAsString(names));
-                        update = true;
-                    }
 
-                    if (producers != null && !producers.isEmpty()) {
-                        List<Integer> ids = new ArrayList<>();
-                        List<String> names = new ArrayList<>();
-                        producers.forEach(item -> {
-                            ids.add(item.getCode());
-                            names.add(item.getName());
-                        });
-                        song.setProducerMid(CommonUtil.OBJECT_MAPPER.writeValueAsString(ids));
-                        song.setProducer(CommonUtil.OBJECT_MAPPER.writeValueAsString(names));
-                        update = true;
-                    }
                     if (publishers != null && !publishers.isEmpty()) {
                         List<Integer> ids = new ArrayList<>();
                         List<String> names = new ArrayList<>();
@@ -171,10 +122,159 @@ public class FillDataService {
                         song.setPublisher(CommonUtil.OBJECT_MAPPER.writeValueAsString(names));
                         update = true;
                     }
-                    if (update) {
-                        Song save = mysqlSongRepository.save(song);
-                        System.out.println("保存歌曲到MySQL：" + CommonUtil.OBJECT_MAPPER.writeValueAsString(save));
+
+                    if (isMatchSinger) {//全部歌星匹配，才更新权利人信息
+                        if (litigants != null && !litigants.isEmpty()) {
+                            List<Integer> ids = new ArrayList<>();
+                            List<String> names = new ArrayList<>();
+                            litigants.forEach(item -> {
+                                ids.add(item.getCode());
+                                names.add(item.getName());
+                            });
+                            song.setLitigantMid(CommonUtil.OBJECT_MAPPER.writeValueAsString(ids));
+                            song.setLitigant(CommonUtil.OBJECT_MAPPER.writeValueAsString(names));
+                            update = true;
+                        }
+                        if (producers != null && !producers.isEmpty()) {
+                            List<Integer> ids = new ArrayList<>();
+                            List<String> names = new ArrayList<>();
+                            producers.forEach(item -> {
+                                ids.add(item.getCode());
+                                names.add(item.getName());
+                            });
+                            song.setProducerMid(CommonUtil.OBJECT_MAPPER.writeValueAsString(ids));
+                            song.setProducer(CommonUtil.OBJECT_MAPPER.writeValueAsString(names));
+                            update = true;
+                        }
+                        if (!StringUtils.isEmpty(version)) {
+                            version = version.toUpperCase();
+                            boolean isSameVersion = ("MTV".equalsIgnoreCase(version) && (song.getVideoType() == 1 || song.getVideoType() == 11))
+                                    || ("演唱会".equalsIgnoreCase(version) && (song.getVideoType() == 2));
+                            if (isSameVersion) {
+                                if (releaseDate != null) {
+                                    song.setLocalLyricFilePath(DateUtil.getDate(releaseDate));
+                                    update = true;
+                                }
+                                if (!StringUtils.isEmpty(album)) {
+                                    song.setLyricFilePath(album);
+                                    update = true;
+                                }
+                            }
+                        }
                     }
+                }
+
+                if (update) {
+//                    Song save = mysqlSongRepository.save(song);
+                    System.out.println("保存歌曲到MySQL：" + CommonUtil.OBJECT_MAPPER.writeValueAsString(song));
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+//    private boolean isContainSinger(List<CodeName> codeNames, String dbSingerName) {
+//        if (StringUtils.isEmpty(dbSingerName)) {//数据库没有数据，填充
+//            return true;
+//        }
+//        List<String> singerNames;
+//        try {
+//            singerNames = CommonUtil.OBJECT_MAPPER.readValue(dbSingerName, new TypeReference<List<String>>() {
+//            });
+//        } catch (Exception e) {//转换出错，说明数据库数据格式存储错误，纠正过来
+//            return true;
+//        }
+//        if (singerNames != null) {
+//            return isContainElement(codeNames, singerNames);
+//        } else {
+//            return true;
+//        }
+//    }
+
+//    private int isContainElement(List<CodeName> elements1, List<String> elements2) {
+//        return matchElement(elements1, elements2);
+//    }
+
+
+    private int matchElement(List<CodeName> elements1, List<String> elements2) {
+        int matchCount = 0;
+        if (!elements1.isEmpty() && !elements2.isEmpty()) {
+            for (CodeName element1 : elements1) {
+                for (String element2 : elements2) {
+                    if (element1.getName().equalsIgnoreCase(element2)) {
+                        matchCount++;
+                    }
+                }
+            }
+        }
+        return matchCount;
+    }
+
+    public String fillBNS(Integer indexFrom, Integer indexTo) {
+        fillBNS(indexFrom, indexTo, "song_message.xlsx");
+        return fillBNS(indexFrom, indexTo, "bns2.xlsx");
+    }
+
+    private String fillBNS(Integer indexFrom, Integer indexTo, String excelFile) {
+        AtomicInteger count = new AtomicInteger(0);
+        long time = System.currentTimeMillis();
+        XSSFSheet sheet;
+        try {
+            sheet = readExcel(excelFile);
+            int size = sheet.getPhysicalNumberOfRows();
+            int from = 1;
+            if (indexFrom > 0) {
+                from = indexFrom;
+            }
+            if (indexTo > 0) {
+                size = indexTo;
+            }
+            //循环取每行的数据
+            for (int row = from; row < size; row++) {
+                String id = getString(sheet.getRow(row).getCell(0));
+                String songName = CommonUtil.deleteParenthesesEnd(CommonUtil.deleteSpaceAndUpperFirst(getString(sheet.getRow(row).getCell(1))));
+                String singer = CommonUtil.deleteSpecialChar(getString(sheet.getRow(row).getCell(2)));
+                String lyricist = CommonUtil.deleteSpecialChar(getString(sheet.getRow(row).getCell(3)));
+                String composer = CommonUtil.deleteSpecialChar(getString(sheet.getRow(row).getCell(4)));
+                String litigant = CommonUtil.deleteSpecialChar(getString(sheet.getRow(row).getCell(5)));
+                String producer = CommonUtil.deleteSpecialChar(getString(sheet.getRow(row).getCell(6)));
+                String publisher = CommonUtil.deleteSpecialChar(getString(sheet.getRow(row).getCell(7)));
+                String releaseTime = CommonUtil.deleteSpecialChar(getString(sheet.getRow(row).getCell(8)));
+                String tag = CommonUtil.deleteSpecialChar(getString(sheet.getRow(row).getCell(9)));
+
+                System.out.println("第" + row + "行，id：" + id + " 歌名：" + songName + " 歌星：" + singer + " 词：" + lyricist + " 曲：" + composer
+                        + " 诉讼：" + litigant + " 制作：" + producer + " 出品：" + publisher + " 发行日期：" + releaseTime + " 标签：" + tag);
+                Date releaseDate = StringUtils.isEmpty(releaseTime) ? null : DateUtil.string2Date(releaseTime);
+
+                List<CodeName> singers = handlerMusicianMySQL(singer);
+                List<CodeName> lyricists = handlerMusicianMySQL(lyricist);
+                List<CodeName> composers = handlerMusicianMySQL(composer);
+                List<CodeName> litigants = handlerMusicianMySQL(litigant);
+                List<CodeName> producers = handlerMusicianMySQL(producer);
+                List<CodeName> publishers = handlerMusicianMySQL(publisher);
+                fill2Mysql(id, songName, singers, lyricists, composers, litigants, producers, publishers, releaseDate, null, "MTV", tag);
+                count.getAndIncrement();
+            }
+            String tip = "更新歌曲总数：" + count.get() + " 耗时：" + (System.currentTimeMillis() - time) / 1000;
+            System.out.println(tip);
+            return tip;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "";
+    }
+
+    private void fill2Mysql(String id, String songName, List<CodeName> singers, List<CodeName> lyricists, List<CodeName> composers,
+                            List<CodeName> litigants, List<CodeName> producers, List<CodeName> publishers, Date releaseData, String album, String version, String tag) {
+        if (!StringUtils.isEmpty(id)) {
+            try {
+                Song song = mysqlSongRepository.findSongBySongId(Integer.valueOf(id));
+                if (song != null) {
+                    if (!StringUtils.isEmpty(tag)) {
+                        song.setLyricFileMd5(tag);
+                    }
+                    fill2Mysql(song, singers, lyricists, composers, litigants, producers, publishers, releaseData, album, version);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -183,61 +283,26 @@ public class FillDataService {
 
             List<Song> songs = mysqlSongRepository.findAllBySongName(songName);
             if (songs != null) {
-                songs.forEach(item -> {
-                    if (isContainSinger(singers, item.getSinger())) {
-                        fill2Mysql(item.getSongId() + "", songName, singers, lyricists, composers, litigants, producers, publishers);
-                    }
-                });
+                songs.forEach(item ->
+                        fill2Mysql(item, singers, lyricists, composers, litigants, producers, publishers, releaseData, album, version));
             }
         }
     }
 
-    private boolean isContainSinger(List<CodeName> codeNames, String dbSingerName) {
-        if (codeNames.isEmpty() && StringUtils.isEmpty(dbSingerName)) {
-            return true;
-        }
-        try {
-            List<String> singerNames = CommonUtil.OBJECT_MAPPER.readValue(dbSingerName, new TypeReference<List<String>>() {
-            });
-            int i = 0;
-            for (CodeName codeName : codeNames) {
-                if (singerNames.size() > i) {
-                    if (codeName.getName().trim().toUpperCase().equals(singerNames.get(i).trim().toUpperCase())) {
-                        return true;
-                    }
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return false;
-    }
 
     public String fillReleaseTime() {
-        XSSFWorkbook wb;
         XSSFSheet sheet;
         long count = 0;
         try {
-            //excel模板路径
-            File cfgFile = ResourceUtils.getFile(ResourceUtils.CLASSPATH_URL_PREFIX + "templates/song_message.xlsx");
-            InputStream in = new FileInputStream(cfgFile);
-            //读取excel模板
-            wb = new XSSFWorkbook(in);
-            sheet = wb.getSheetAt(0);
+            sheet = readExcel("song_message.xlsx");
             int size = sheet.getPhysicalNumberOfRows();
             int from = 1;
-
             //循环取每行的数据
             for (int row = from; row < size; row++) {
                 String id = getString(sheet.getRow(row).getCell(0));
                 String releaseTime = CommonUtil.deleteSpecialChar(getString(sheet.getRow(row).getCell(8)));
                 System.out.println("第" + row + "行，id：" + id + " 发行日期：" + releaseTime);
-                Date releaseDate = null;
-                try {
-                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-                    releaseDate = sdf.parse(releaseTime);
-                } catch (Exception e) {
-                }
+                Date releaseDate = StringUtils.isEmpty(releaseTime) ? null : DateUtil.string2Date(releaseTime);
                 if (releaseDate != null) {
                     count = count + songSongVersionRepository.updateIssueTime(Integer.valueOf(id), releaseDate);
                 }
@@ -252,13 +317,13 @@ public class FillDataService {
     }
 
 
-    private List<CodeName> handlerMusicianMySQL(int musicianType, String musicians) {
+    private List<CodeName> handlerMusicianMySQL(String musicians) {
         List<CodeName> songSingers = new ArrayList<>();
         if (!StringUtils.isEmpty(musicians)) {
             String[] singers = musicians.split("\\|");
             for (String name : singers) {
                 String n = CommonUtil.deleteSpaceAndUpperFirst(name);
-                System.out.println("查询歌星：" + n + " 信息 >>>>>>>");
+//                System.out.println("查询歌星：" + n + " 信息 >>>>>>>");
                 Musician musician = mysqlMusicianRepository.findFirstByMusicianName(n);
                 if (musician == null) {//新建歌手信息
                     songSingers.add(new CodeName(0, n));
@@ -296,17 +361,11 @@ public class FillDataService {
 
 
     public String fillYJX(Integer indexFrom, Integer indexTo) {
-        int updateNoIdSongCount = 0;
-        int updateNoIdVersionCount = 0;
-        XSSFWorkbook wb;
+        AtomicInteger count = new AtomicInteger(0);
+        long time = System.currentTimeMillis();
         XSSFSheet sheet;
         try {
-            //excel模板路径
-            File cfgFile = ResourceUtils.getFile(ResourceUtils.CLASSPATH_URL_PREFIX + "templates/MTV_yjx.xlsx");
-            InputStream in = new FileInputStream(cfgFile);
-            //读取excel模板
-            wb = new XSSFWorkbook(in);
-            sheet = wb.getSheetAt(0);
+            sheet = readExcel("MTV_yjx.xlsx");
             int size = sheet.getPhysicalNumberOfRows();
             int from = 1;
             if (indexFrom > 0) {
@@ -315,7 +374,6 @@ public class FillDataService {
             if (indexTo > 0) {
                 size = indexTo;
             }
-
             //循环取每行的数据
             for (int row = from; row < size; row++) {
                 String id = getString(sheet.getRow(row).getCell(0));
@@ -334,23 +392,16 @@ public class FillDataService {
 
                 if (songs != null) {
                     songs.forEach(item -> {
-                        if (isContainSinger(singer, item.getSinger())) {
-                            List<CodeName> litigants = handlerMusicianMySQL(4, litigant);
-                            List<CodeName> producers = handlerMusicianMySQL(5, producer);
-                            fill2Mysql(item, litigants, producers);
-                        }
+                        List<CodeName> singers = handlerMusicianMySQL(singer);
+                        List<CodeName> litigants = handlerMusicianMySQL(litigant);
+                        List<CodeName> producers = handlerMusicianMySQL(producer);
+                        fill2Mysql(item, singers, null, null, litigants, producers, null, null, null, version);
+                        count.getAndIncrement();
                     });
                 }
-
-//                List<CodeName> singers = handlerMusicianMySQL(1, singer);
-//                List<CodeName> lyricists = handlerMusicianMySQL(2, lyricist);
-//                List<CodeName> composers = handlerMusicianMySQL(3, composer);
-//                List<CodeName> litigants = handlerMusicianMySQL(4, litigant);
-//                List<CodeName> producers = handlerMusicianMySQL(5, producer);
-//                List<CodeName> publishers = handlerMusicianMySQL(6, publisher);
-//                fill2Mysql(id, songName, singers, lyricists, composers, litigants, producers, publishers);
             }
-            String tip = "更新歌曲总数：" + updateNoIdSongCount + " 更新版本总数：" + updateNoIdVersionCount;
+            String tip = "更新歌曲总数：" + count.get() + " 耗时：" + (System.currentTimeMillis() - time) / 1000;
+
             System.out.println(tip);
             return tip;
         } catch (Exception e) {
@@ -360,78 +411,38 @@ public class FillDataService {
     }
 
 
-    private boolean isContainSinger(String excelSingerName, String dbSingerName) {
-        if (StringUtils.isEmpty(excelSingerName) && StringUtils.isEmpty(dbSingerName)) {
-            return true;
-        }
+//    private boolean isContainSinger(String excelSingerName, String dbSingerName) {
+//        List<CodeName> codeNames = new ArrayList<>();
+//        if (!StringUtils.isEmpty(excelSingerName)) {
+//            String[] excelSingers = excelSingerName.split("\\|");
+//            for (String singer : excelSingers) {
+//                codeNames.add(new CodeName(0, singer));
+//            }
+//        }
+//        return isContainSinger(codeNames, dbSingerName);
+//    }
+
+    public XSSFSheet readExcel(String excelFile) {
         try {
-            String[] excelSingers = excelSingerName.split("\\|");
-            List<String> singerNames = CommonUtil.OBJECT_MAPPER.readValue(dbSingerName, new TypeReference<List<String>>() {
-            });
-            int i = 0;
-            for (String singer : excelSingers) {
-                if (singerNames.size() > i) {
-                    if (singer.trim().toUpperCase().equals(singerNames.get(i).trim().toUpperCase())) {
-                        return true;
-                    }
-                }
-            }
+            XSSFWorkbook wb;
+            File cfgFile = ResourceUtils.getFile(ResourceUtils.CLASSPATH_URL_PREFIX + "templates/" + excelFile);
+            InputStream in = new FileInputStream(cfgFile);
+            //读取excel模板
+            wb = new XSSFWorkbook(in);
+            return wb.getSheetAt(0);
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return false;
-    }
-
-
-    private void fill2Mysql(Song song, List<CodeName> litigants, List<CodeName> producers) {
-        try {
-            if (song != null) {
-                boolean update = false;
-                if (litigants != null && !litigants.isEmpty()) {
-                    List<Integer> ids = new ArrayList<>();
-                    List<String> names = new ArrayList<>();
-                    litigants.forEach(item -> {
-                        ids.add(item.getCode());
-                        names.add(item.getName());
-                    });
-                    song.setLitigantMid(CommonUtil.OBJECT_MAPPER.writeValueAsString(ids));
-                    song.setLitigant(CommonUtil.OBJECT_MAPPER.writeValueAsString(names));
-                    update = true;
-                }
-                if (producers != null && !producers.isEmpty()) {
-                    List<Integer> ids = new ArrayList<>();
-                    List<String> names = new ArrayList<>();
-                    producers.forEach(item -> {
-                        ids.add(item.getCode());
-                        names.add(item.getName());
-                    });
-                    song.setProducerMid(CommonUtil.OBJECT_MAPPER.writeValueAsString(ids));
-                    song.setProducer(CommonUtil.OBJECT_MAPPER.writeValueAsString(names));
-                    update = true;
-                }
-                if (update) {
-                    Song save = mysqlSongRepository.save(song);
-                    System.out.println("保存歌曲到MySQL：" + CommonUtil.OBJECT_MAPPER.writeValueAsString(save));
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        return null;
     }
 
 
     public String fillLY(Integer indexFrom, int indexTo) {
-        int updateNoIdSongCount = 0;
-        int updateNoIdVersionCount = 0;
-        XSSFWorkbook wb;
+        AtomicInteger count = new AtomicInteger(0);
+        long time = System.currentTimeMillis();
         XSSFSheet sheet;
         try {
-            //excel模板路径
-            File cfgFile = ResourceUtils.getFile(ResourceUtils.CLASSPATH_URL_PREFIX + "templates/ly.xlsx");
-            InputStream in = new FileInputStream(cfgFile);
-            //读取excel模板
-            wb = new XSSFWorkbook(in);
-            sheet = wb.getSheetAt(0);
+            sheet = readExcel("ly.xlsx");
             int size = sheet.getPhysicalNumberOfRows();
             int from = 1;
             if (indexFrom > 0) {
@@ -449,27 +460,22 @@ public class FillDataService {
                 String composer = CommonUtil.deleteSpecialChar(getString(sheet.getRow(row).getCell(4)));
                 String producer = CommonUtil.deleteSpecialChar(getString(sheet.getRow(row).getCell(5)));
                 String litigant = CommonUtil.deleteSpecialChar(getString(sheet.getRow(row).getCell(6)));
-
                 System.out.println("第" + row + "行，id：" + id + " 歌名：" + songName + " 歌星：" + singer + " 词：" + lyricist + " 曲：" + composer
                         + " 诉讼：" + litigant + " 制作：" + producer);
-
                 List<Song> songs = mysqlSongRepository.findAllBySongName(songName);
-
                 if (songs != null) {
                     songs.forEach(item -> {
-                        if (isContainSinger(singer, item.getSinger())) {
-                            List<CodeName> lyricists = handlerMusicianMySQL(2, lyricist);
-                            List<CodeName> composers = handlerMusicianMySQL(3, composer);
-                            List<CodeName> litigants = handlerMusicianMySQL(4, litigant);
-                            List<CodeName> producers = handlerMusicianMySQL(5, producer);
-                            fill2Mysql(item, lyricists, composers, litigants, producers);
-                        } else {
-                            System.out.println("同歌名[" + item.getSongName() + "]不同歌星 EXCEL [" + singer + "] db [" + item.getSinger() + "]");
-                        }
+                        List<CodeName> singers = handlerMusicianMySQL(singer);
+                        List<CodeName> lyricists = handlerMusicianMySQL(lyricist);
+                        List<CodeName> composers = handlerMusicianMySQL(composer);
+                        List<CodeName> litigants = handlerMusicianMySQL(litigant);
+                        List<CodeName> producers = handlerMusicianMySQL(producer);
+                        fill2Mysql(item, singers, lyricists, composers, litigants, producers, null, null, null, "");
+                        count.getAndIncrement();
                     });
                 }
             }
-            String tip = "更新歌曲总数：" + updateNoIdSongCount + " 更新版本总数：" + updateNoIdVersionCount;
+            String tip = "更新歌曲总数：" + count.get() + " 耗时：" + (System.currentTimeMillis() - time) / 1000;
             System.out.println(tip);
             return tip;
         } catch (Exception e) {
@@ -478,62 +484,58 @@ public class FillDataService {
         return "";
     }
 
-    private void fill2Mysql(Song song, List<CodeName> lyricists, List<CodeName> composers, List<CodeName> litigants, List<CodeName> producers) {
+
+    public String fillTotal(Integer indexFrom, int indexTo) {
+        AtomicInteger count = new AtomicInteger(0);
+        long time = System.currentTimeMillis();
+        XSSFSheet sheet;
         try {
-            if (song != null) {
-                boolean update = false;
-                if (lyricists != null && !lyricists.isEmpty()) {
-                    List<Integer> ids = new ArrayList<>();
-                    List<String> names = new ArrayList<>();
-                    lyricists.forEach(item -> {
-                        ids.add(item.getCode());
-                        names.add(item.getName());
+            sheet = readExcel("song_msg_total.xlsx");
+            int size = sheet.getPhysicalNumberOfRows();
+            int from = 1;
+            if (indexFrom > 0) {
+                from = indexFrom;
+            }
+            if (indexTo > 0) {
+                size = indexTo;
+            }
+            //循环取每行的数据
+            for (int row = from; row < size; row++) {
+                String id = getString(sheet.getRow(row).getCell(0));
+                String songName = CommonUtil.deleteParenthesesEnd(CommonUtil.deleteSpaceAndUpperFirst(getString(sheet.getRow(row).getCell(9))));
+                String singer = CommonUtil.deleteSpecialChar(getString(sheet.getRow(row).getCell(2)));
+                String album = CommonUtil.deleteSpecialChar(getString(sheet.getRow(row).getCell(3)));
+                String lyricist = CommonUtil.deleteSpecialChar(getString(sheet.getRow(row).getCell(4)));
+                String composer = CommonUtil.deleteSpecialChar(getString(sheet.getRow(row).getCell(5)));
+                String producer = CommonUtil.deleteSpecialChar(getString(sheet.getRow(row).getCell(6)));
+//                String litigant = CommonUtil.deleteSpecialChar(getString(sheet.getRow(row).getCell(6)));
+                String releaseTime = CommonUtil.deleteSpecialChar(getString(sheet.getRow(row).getCell(7)));
+
+                String version = CommonUtil.deleteSpecialChar(getString(sheet.getRow(row).getCell(13)));
+                System.out.println("第" + row + "行，id：" + id + " 发行日期：" + releaseTime);
+                Date releaseDate = StringUtils.isEmpty(releaseTime) ? null : DateUtil.string2Date(releaseTime);
+                System.out.println("第" + row + "行，id：" + id + " 歌名：" + songName + " 歌星：" + singer + " 词：" + lyricist + " 曲：" + composer
+                        + " 出品：" + producer + " 专辑：" + album + " 发行时间:" + (releaseDate == null ? "" : DateUtil.getDate(releaseDate)) + " 版本：" + version);
+
+                List<Song> songs = mysqlSongRepository.findAllBySongName(songName);
+
+                if (songs != null) {
+                    songs.forEach(item -> {
+                        List<CodeName> singers = handlerMusicianMySQL(singer);
+                        List<CodeName> lyricists = handlerMusicianMySQL(lyricist);
+                        List<CodeName> composers = handlerMusicianMySQL(composer);
+                        List<CodeName> producers = handlerMusicianMySQL(producer);
+                        fill2Mysql(item, singers, lyricists, composers, null, producers, null, releaseDate, album, version);
+                        count.getAndIncrement();
                     });
-                    song.setLyricistMid(CommonUtil.OBJECT_MAPPER.writeValueAsString(ids));
-                    song.setLyricist(CommonUtil.OBJECT_MAPPER.writeValueAsString(names));
-                    update = true;
-                }
-                if (composers != null && !composers.isEmpty()) {
-                    List<Integer> ids = new ArrayList<>();
-                    List<String> names = new ArrayList<>();
-                    composers.forEach(item -> {
-                        ids.add(item.getCode());
-                        names.add(item.getName());
-                    });
-                    song.setComposerMid(CommonUtil.OBJECT_MAPPER.writeValueAsString(ids));
-                    song.setComposer(CommonUtil.OBJECT_MAPPER.writeValueAsString(names));
-                    update = true;
-                }
-                if (litigants != null && !litigants.isEmpty()) {
-                    List<Integer> ids = new ArrayList<>();
-                    List<String> names = new ArrayList<>();
-                    litigants.forEach(item -> {
-                        ids.add(item.getCode());
-                        names.add(item.getName());
-                    });
-                    song.setLitigantMid(CommonUtil.OBJECT_MAPPER.writeValueAsString(ids));
-                    song.setLitigant(CommonUtil.OBJECT_MAPPER.writeValueAsString(names));
-                    update = true;
-                }
-                if (producers != null && !producers.isEmpty()) {
-                    List<Integer> ids = new ArrayList<>();
-                    List<String> names = new ArrayList<>();
-                    producers.forEach(item -> {
-                        ids.add(item.getCode());
-                        names.add(item.getName());
-                    });
-                    song.setProducerMid(CommonUtil.OBJECT_MAPPER.writeValueAsString(ids));
-                    song.setProducer(CommonUtil.OBJECT_MAPPER.writeValueAsString(names));
-                    update = true;
-                }
-                if (update) {
-                    Song save = mysqlSongRepository.save(song);
-                    System.out.println("保存歌曲到MySQL：" + CommonUtil.OBJECT_MAPPER.writeValueAsString(save));
                 }
             }
+            String tip = "更新歌曲总数：" + count.get() + " 耗时：" + (System.currentTimeMillis() - time) / 1000;
+            System.out.println(tip);
+            return tip;
         } catch (Exception e) {
             e.printStackTrace();
         }
+        return "";
     }
-
 }
