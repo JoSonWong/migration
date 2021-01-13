@@ -13,7 +13,7 @@ import java.util.List;
 public class MigrateBase {
 
 
-    CodeName getEdition(Integer videoType) {
+    public static CodeName getEdition(Integer videoType) {
         switch (videoType) {
             case 1:
                 return new CodeName(1, "MV");
@@ -34,7 +34,7 @@ public class MigrateBase {
     }
 
 
-    static List<CodeName> getIdNames(String ids, String names) {
+    public static List<CodeName> getIdNames(String ids, String names) {
         List<CodeName> idNames = new ArrayList<>();
         List<Integer> singerIds = new ArrayList<>();
         List<String> singerNames = new ArrayList<>();
@@ -61,11 +61,17 @@ public class MigrateBase {
     }
 
 
-    VideoFile createFileDto(Song song) {
+    VideoFile createFileDto(Song song, String original, String accompaniment, String lyric) {
         VideoFile file = new VideoFile();
         file.setCode(song.getSongId());
-        file.setFileName(song.getMediaFilePath().substring(song.getMediaFilePath().lastIndexOf("/") + 1));
-        file.setFilePath("https://song-enterprise.oss-cn-shenzhen.aliyuncs.com/song/h264/" + file.getFileName());
+        if (StringUtils.isEmpty(original)) {
+            file.setFileName(song.getMediaFilePath().substring(song.getMediaFilePath().lastIndexOf("/") + 1));
+            file.setFilePath("https://song-enterprise.oss-cn-shenzhen.aliyuncs.com/song/h264/" + file.getFileName());
+        } else {
+            file.setOriginalFilePath(original);
+            file.setAccompanimentFilePath(accompaniment);
+            file.setLyricFilePath(lyric);
+        }
         file.setFormatName("H264");
         file.setVideoType(song.getVideoTypeDetail().getName());
         file.setResolutionWidth(song.getResolutionWidth());

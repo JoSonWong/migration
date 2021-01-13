@@ -17,7 +17,7 @@ public class VideoFile {
     private String fileName;//文件名
 
     @Field(value = "file_path")
-    private String filePath;//视频文件地址
+    private String filePath;//视频文件地址或
 
     @Field(value = "format_name")
     private String formatName;//格式类型名
@@ -42,6 +42,12 @@ public class VideoFile {
 
     @Field(value = "coordinates_file_path")
     private String coordinatesFilePath;//评分坐标
+
+    @Field(value = "original_file_path")
+    private String originalFilePath;//原唱文件地址
+
+    @Field(value = "accompaniment_file_path")
+    private String accompanimentFilePath;//伴唱唱文件地址
 
     @Field(value = "lyric_file_path")
     private String lyricFilePath;//歌词文件地址

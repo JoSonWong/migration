@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
-@Repository()
+@Repository(value = "mysqlSongTypeRepository")
 public interface MysqlSongTypeRepository extends JpaRepository<SongType, Integer>, JpaSpecificationExecutor<SongType> {
 
     List<SongType> findAllByParentIdOrderBySortAscIdAsc(Integer parentId);

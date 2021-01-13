@@ -4,11 +4,10 @@ package com.bestarmedia.migration.service;
 import com.bestarmedia.migration.misc.CommonUtil;
 import com.bestarmedia.migration.misc.DateUtil;
 import com.bestarmedia.migration.model.mongo.CodeName;
-import com.bestarmedia.migration.model.mysql.Musician;
-import com.bestarmedia.migration.model.mysql.Song;
-import com.bestarmedia.migration.repository.mongo.song.SongSongVersionRepository;
-import com.bestarmedia.migration.repository.mysql.MysqlMusicianRepository;
-import com.bestarmedia.migration.repository.mysql.MysqlSongRepository;
+import com.bestarmedia.migration.model.mysql.MusicianSimple;
+import com.bestarmedia.migration.model.mysql.SongSimple;
+import com.bestarmedia.migration.repository.mysql.MysqlMusicianSimpleRepository;
+import com.bestarmedia.migration.repository.mysql.MysqlSongSimpleRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.poi.hssf.usermodel.HSSFDateUtil;
 import org.apache.poi.ss.usermodel.Cell;
@@ -34,22 +33,24 @@ import java.util.concurrent.atomic.AtomicLong;
 @Service
 public class FillDataService {
 
-    private final SongSongVersionRepository songSongVersionRepository;
+//    private final SongSongVersionRepository songSongVersionRepository;
 //    private final VodSingerRepository vodSingerRepository;
 //    private final VodSongVersionRepository vodSongVersionRepository;
 
-    private final MysqlSongRepository mysqlSongRepository;
-    private final MysqlMusicianRepository mysqlMusicianRepository;
+    private final MysqlSongSimpleRepository mysqlSongSimpleRepository;
+    private final MysqlMusicianSimpleRepository mysqlMusicianSimpleRepository;
 
     @Autowired
-    public FillDataService(SongSongVersionRepository songSongVersionRepository,
-                           MysqlSongRepository mysqlSongRepository, MysqlMusicianRepository mysqlMusicianRepository) {
-        this.songSongVersionRepository = songSongVersionRepository;
-        this.mysqlSongRepository = mysqlSongRepository;
-        this.mysqlMusicianRepository = mysqlMusicianRepository;
+    public FillDataService(
+//            SongSongVersionRepository songSongVersionRepository,
+            MysqlSongSimpleRepository mysqlSongSimpleRepository,
+            MysqlMusicianSimpleRepository mysqlMusicianSimpleRepository) {
+//        this.songSongVersionRepository = songSongVersionRepository;
+        this.mysqlSongSimpleRepository = mysqlSongSimpleRepository;
+        this.mysqlMusicianSimpleRepository = mysqlMusicianSimpleRepository;
     }
 
-    private boolean fill2Mysql(Song song, List<CodeName> singers, List<CodeName> lyricists, List<CodeName> composers,
+    private boolean fill2Mysql(SongSimple song, List<CodeName> singers, List<CodeName> lyricists, List<CodeName> composers,
                                List<CodeName> litigants, List<CodeName> producers, List<CodeName> publishers, Date releaseDate, String album, String version) {
         try {
             if (song != null) {
@@ -166,7 +167,7 @@ public class FillDataService {
                 }
 
                 if (update) {
-                    Song save = mysqlSongRepository.save(song);
+                    SongSimple save = mysqlSongSimpleRepository.save(song);
 //                    System.out.println("保存歌曲到MySQL：" + CommonUtil.OBJECT_MAPPER.writeValueAsString(save));
                     return true;
                 }
@@ -200,7 +201,7 @@ public class FillDataService {
 //    }
 
 
-    private int matchElement(List<CodeName> elements1, List<String> elements2) {
+    public static int matchElement(List<CodeName> elements1, List<String> elements2) {
         int matchCount = 0;
         if (!elements1.isEmpty() && !elements2.isEmpty()) {
             for (CodeName element1 : elements1) {
@@ -273,7 +274,7 @@ public class FillDataService {
         AtomicInteger integer = new AtomicInteger(0);
         if (!StringUtils.isEmpty(id)) {
             try {
-                Song song = mysqlSongRepository.findSongBySongId(Integer.valueOf(id));
+                SongSimple song = mysqlSongSimpleRepository.findSongBySongId(Integer.valueOf(id));
                 if (song != null) {
                     if (!StringUtils.isEmpty(tag)) {
                         song.setLyricFileMd5(tag);
@@ -285,8 +286,7 @@ public class FillDataService {
                 e.printStackTrace();
             }
         } else {
-
-            List<Song> songs = mysqlSongRepository.findAllBySongName(songName);
+            List<SongSimple> songs = mysqlSongSimpleRepository.findAllBySongName(songName);
             if (songs != null) {
                 songs.forEach(item -> {
                     if (fill2Mysql(item, singers, lyricists, composers, litigants, producers, publishers, releaseData, album, version))
@@ -297,25 +297,38 @@ public class FillDataService {
         return integer.get();
     }
 
+    public String fillReleaseTimeAndTag(Integer indexFrom, Integer indexTo) {
+        String ret = fillReleaseTimeAndTag(indexFrom, indexTo, "song_message.xlsx");
+        return ret + " bns2：" + fillReleaseTimeAndTag(indexFrom, indexTo, "bns2.xlsx");
+    }
 
-    public String fillReleaseTime() {
+
+    public String fillReleaseTimeAndTag(Integer indexFrom, Integer indexTo, String fileName) {
+        AtomicLong updateCount = new AtomicLong(0);
+        long time = System.currentTimeMillis();
         XSSFSheet sheet;
-        long count = 0;
         try {
-            sheet = readExcel("song_message.xlsx");
-            int size = sheet.getPhysicalNumberOfRows();
-            int from = 1;
+            sheet = readExcel(fileName);
+            int size = indexTo > 0 ? indexTo : sheet.getPhysicalNumberOfRows();
+            int from = indexFrom > 0 ? indexFrom : 1;
             //循环取每行的数据
             for (int row = from; row < size; row++) {
-                String id = getString(sheet.getRow(row).getCell(0));
-                String releaseTime = CommonUtil.deleteSpecialChar(getString(sheet.getRow(row).getCell(8)));
-                System.out.println("第" + row + "行，id：" + id + " 发行日期：" + releaseTime);
-                Date releaseDate = StringUtils.isEmpty(releaseTime) ? null : DateUtil.string2Date(releaseTime);
-                if (releaseDate != null) {
-                    count = count + songSongVersionRepository.updateIssueTime(Integer.valueOf(id), releaseDate);
+                try {
+                    String id = getString(sheet.getRow(row).getCell(0));
+                    if (!StringUtils.isEmpty(id)) {
+                        int songId = Integer.valueOf(id);
+                        String releaseTime = CommonUtil.deleteSpecialChar(getString(sheet.getRow(row).getCell(8)));
+                        String tag = CommonUtil.deleteSpecialChar(getString(sheet.getRow(row).getCell(9)));
+                        System.out.println("第" + row + "行，id：" + id + " 发行日期：" + releaseTime + " 标签：" + tag);
+                        Date releaseDate = StringUtils.isEmpty(releaseTime) ? null : DateUtil.string2Date(releaseTime);
+                        int retCount = mysqlSongSimpleRepository.updateReleaseTimeAndTag(releaseDate == null ? "" : DateUtil.getDate(releaseDate), tag, songId);
+                        updateCount.set(updateCount.get() + retCount);
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
             }
-            String tip = "更新发行时间总数量：" + count;
+            String tip = "更新发行时间及歌曲标签总数量：" + updateCount.get() + " 耗时：" + (System.currentTimeMillis() - time) / 1000;
             System.out.println(tip);
             return tip;
         } catch (Exception e) {
@@ -332,7 +345,7 @@ public class FillDataService {
             for (String name : singers) {
                 String n = CommonUtil.deleteSpaceAndUpperFirst(name);
 //                System.out.println("查询歌星：" + n + " 信息 >>>>>>>");
-                Musician musician = mysqlMusicianRepository.findFirstByMusicianName(n);
+                MusicianSimple musician = mysqlMusicianSimpleRepository.findFirstByMusicianName(n);
                 if (musician == null) {//新建歌手信息
                     songSingers.add(new CodeName(0, n));
                 } else {
@@ -396,7 +409,7 @@ public class FillDataService {
                 System.out.println("第" + row + "行，id：" + id + " 歌名：" + songName + " 歌星：" + singer + " 版本：" + version + " 语种：" + language
                         + " 诉讼：" + litigant + " 制作：" + producer);
 
-                List<Song> songs = mysqlSongRepository.findAllBySongName(songName);
+                List<SongSimple> songs = mysqlSongSimpleRepository.findAllBySongName(songName);
 
                 if (songs != null) {
                     songs.forEach(item -> {
@@ -430,7 +443,7 @@ public class FillDataService {
 //        return isContainSinger(codeNames, dbSingerName);
 //    }
 
-    public XSSFSheet readExcel(String excelFile) {
+    public static XSSFSheet readExcel(String excelFile) {
         try {
             XSSFWorkbook wb;
             File cfgFile = ResourceUtils.getFile(ResourceUtils.CLASSPATH_URL_PREFIX + "templates/" + excelFile);
@@ -470,7 +483,7 @@ public class FillDataService {
                 String litigant = CommonUtil.deleteSpecialChar(getString(sheet.getRow(row).getCell(6)));
                 System.out.println("第" + row + "行，id：" + id + " 歌名：" + songName + " 歌星：" + singer + " 词：" + lyricist + " 曲：" + composer
                         + " 诉讼：" + litigant + " 制作：" + producer);
-                List<Song> songs = mysqlSongRepository.findAllBySongName(songName);
+                List<SongSimple> songs = mysqlSongSimpleRepository.findAllBySongName(songName);
                 if (songs != null) {
                     songs.forEach(item -> {
                         List<CodeName> singers = handlerMusicianMySQL(singer);
@@ -534,7 +547,7 @@ public class FillDataService {
                     Date releaseDate = StringUtils.isEmpty(releaseTime) ? null : DateUtil.string2Date(releaseTime);
 
 
-                    List<Song> songs = mysqlSongRepository.findAllBySongName(songName);
+                    List<SongSimple> songs = mysqlSongSimpleRepository.findAllBySongName(songName);
 
                     if (songs != null) {
                         songs.forEach(item -> {

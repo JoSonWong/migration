@@ -1,7 +1,6 @@
 package com.bestarmedia.migration.repository.mongo.song;
 
 import com.bestarmedia.migration.model.mongo.CodeName;
-import com.bestarmedia.migration.model.mongo.song.SongInformation;
 import com.bestarmedia.migration.model.mongo.song.SongSongVersion;
 import com.bestarmedia.migration.model.mongo.song.SongSongVersionSimple;
 import com.mongodb.client.result.DeleteResult;
@@ -138,10 +137,10 @@ public class SongSongVersionRepository {
         return updateResult.getMatchedCount();       //返回执行的条
     }
 
-    public SongInformation findByCode(Integer code) {
+    public SongSongVersion findByCode(Integer code) {
         Query query = new Query();
         query.addCriteria(Criteria.where("code").is(code));
-        return songMongoTemplate.findOne(query, SongInformation.class);       //返回执行的条
+        return songMongoTemplate.findOne(query, SongSongVersion.class);       //返回执行的条
     }
 
 
@@ -168,4 +167,26 @@ public class SongSongVersionRepository {
 //        }
 //        return simples;
 //    }
+
+
+    public SongSongVersion findBySongNameAndSingerName(String songName, List<String> singers) {
+        return songMongoTemplate.findOne(new Query(Criteria.where("song.name").is(songName).and("singer.name").in(singers)), SongSongVersion.class);
+    }
+
+
+    public int findMaxCode() {
+        Query query = new Query();
+        query.with(Sort.by(Sort.Direction.DESC, "code"));
+        SongSongVersion songSongVersion = songMongoTemplate.findOne(query, SongSongVersion.class);
+        return songSongVersion == null ? 0 : songSongVersion.getCode();
+    }
+
+
+    public long cleanAllMP3Data() {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("type").is(2));
+        DeleteResult result = songMongoTemplate.remove(query, SongSongVersion.class);
+        return result.getDeletedCount();       //返回执行的条
+    }
+
 }

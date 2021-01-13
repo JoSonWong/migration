@@ -9,6 +9,7 @@ import com.bestarmedia.migration.service.MongoSongMusicianScannerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.HashMap;
@@ -30,6 +31,7 @@ public class MigrateController {
         this.migrateMongoSong2VodService = migrateMongoSong2VodService;
         this.migrateMySQL2MongoSongService = migrateMySQL2MongoSongService;
         this.mongoSongMusicianScannerService = mongoSongMusicianScannerService;
+
     }
 
     @GetMapping("/v7.0/migration/mysql-to-mongo/{typeFormats}")
@@ -46,6 +48,7 @@ public class MigrateController {
         HashMap<String, String> map = new HashMap<>();
         String tip2Song = migrate2MongoSongAndHandlerDataService.migrate();
         map.put("tip", tip2Song);
+        map.put("tip_mp3", migrateMySQL2MongoSongService.fillMP3(0, 0));
         return JsonResponseHandler.success(map);
     }
 
@@ -86,8 +89,17 @@ public class MigrateController {
     @GetMapping("/v7.0/migration/mongo-song/version-musician/scan")
     public JsonResponse scanVersionMusician() {
         HashMap<String, String> map = new HashMap<>();
-        String tip2Song = this.mongoSongMusicianScannerService.scanSongMusician();
+        String tip2Song = this.mongoSongMusicianScannerService.scanVersionMusician();
         map.put("tip", tip2Song);
+        return JsonResponseHandler.success(map);
+    }
+
+
+    @GetMapping("/v7.0/migration/fill-data/mp3-to-mongo-song")
+    public JsonResponse fillMP3ToMongoSong(@RequestParam(value = "from", defaultValue = "0") Integer from,
+                                           @RequestParam(value = "to", defaultValue = "0") Integer to) {
+        HashMap<String, String> map = new HashMap<>();
+        map.put("tip", migrateMySQL2MongoSongService.fillMP3(from, to));
         return JsonResponseHandler.success(map);
     }
 }

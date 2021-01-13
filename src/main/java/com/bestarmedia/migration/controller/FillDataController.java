@@ -16,6 +16,7 @@ public class FillDataController {
 
     private final FillDataService fillDataService;
 
+
     @Autowired
     public FillDataController(FillDataService fillDataService) {
         this.fillDataService = fillDataService;
@@ -71,6 +72,14 @@ public class FillDataController {
                                           @RequestParam(value = "to", defaultValue = "0") Integer to) {
         HashMap<String, String> map = new HashMap<>();
         map.put("tip", fillDataService.fillTotal(from, to, fileName));
+        return JsonResponseHandler.success(map);
+    }
+
+    @GetMapping("/v7.0/migration/fill-data/release-time-tag")
+    public JsonResponse fillReleaseTimeAndTag(@RequestParam(value = "from", defaultValue = "0") Integer from,
+                                              @RequestParam(value = "to", defaultValue = "0") Integer to) {
+        HashMap<String, String> map = new HashMap<>();
+        map.put("tip", fillDataService.fillReleaseTimeAndTag(from, to));
         return JsonResponseHandler.success(map);
     }
 }

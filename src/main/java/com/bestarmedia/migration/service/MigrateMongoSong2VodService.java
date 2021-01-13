@@ -25,7 +25,8 @@ public class MigrateMongoSong2VodService extends MigrateBase {
     private final SongSongTypeRepository songSongTypeRepository;
     private final SongSongVersionRepository songSongVersionRepository;
     private final SongSongVersionTypeRepository songSongVersionTypeRepository;
-
+    private final SongAlbumRepository songAlbumRepository;
+    private final SongTagRepository songTagRepository;
 
     private final VodSingerRepository vodSingerRepository;
     private final VodSongVersionRepository vodSongVersionRepository;
@@ -34,6 +35,8 @@ public class MigrateMongoSong2VodService extends MigrateBase {
     private final VodLanguageRepository vodLanguageRepository;
     private final VodSongTypeRepository vodSongTypeRepository;
     private final VodSongVersionTypeRepository vodSongVersionTypeRepository;
+    private final VodSongAlbumRepository vodSongAlbumRepository;
+    private final VodTagRepository vodTagRepository;
 
     private int versionCount = 0;
     private int songCount = 0;
@@ -49,6 +52,8 @@ public class MigrateMongoSong2VodService extends MigrateBase {
                                        SongSongTypeRepository songSongTypeRepository,
                                        SongSongVersionRepository songSongVersionRepository,
                                        SongSongVersionTypeRepository songSongVersionTypeRepository,
+                                       SongAlbumRepository songAlbumRepository,
+                                       SongTagRepository songTagRepository,
 
                                        VodSingerRepository vodSingerRepository,
                                        VodSongVersionRepository vodSongVersionRepository,
@@ -56,8 +61,9 @@ public class MigrateMongoSong2VodService extends MigrateBase {
                                        VodAreaRepository vodAreaRepository,
                                        VodLanguageRepository vodLanguageRepository,
                                        VodSongTypeRepository vodSongTypeRepository,
-                                       VodSongVersionTypeRepository vodSongVersionTypeRepository
-    ) {
+                                       VodSongVersionTypeRepository vodSongVersionTypeRepository,
+                                       VodSongAlbumRepository vodSongAlbumRepository,
+                                       VodTagRepository vodTagRepository) {
         this.songAreaRepository = songAreaRepository;
         this.songInformationRepository = songInformationRepository;
         this.songLanguageRepository = songLanguageRepository;
@@ -65,6 +71,8 @@ public class MigrateMongoSong2VodService extends MigrateBase {
         this.songSongTypeRepository = songSongTypeRepository;
         this.songSongVersionRepository = songSongVersionRepository;
         this.songSongVersionTypeRepository = songSongVersionTypeRepository;
+        this.songAlbumRepository = songAlbumRepository;
+        this.songTagRepository = songTagRepository;
 
         this.vodSingerRepository = vodSingerRepository;
         this.vodSongVersionRepository = vodSongVersionRepository;
@@ -73,6 +81,8 @@ public class MigrateMongoSong2VodService extends MigrateBase {
         this.vodLanguageRepository = vodLanguageRepository;
         this.vodSongTypeRepository = vodSongTypeRepository;
         this.vodSongVersionTypeRepository = vodSongVersionTypeRepository;
+        this.vodSongAlbumRepository = vodSongAlbumRepository;
+        this.vodTagRepository = vodTagRepository;
 
     }
 
@@ -84,6 +94,9 @@ public class MigrateMongoSong2VodService extends MigrateBase {
         mergeArea();
         mergeSongType();
         mergeSongVersionType();
+        mergeAlbum();
+        mergeTag();
+
         migrateMusician();
 
         String[] typeFormats = typeFormat.split(";");
@@ -100,6 +113,50 @@ public class MigrateMongoSong2VodService extends MigrateBase {
         return tip;
     }
 
+
+    private void mergeTag() {
+        List<SongTag> songTags = songTagRepository.findAll();
+        System.out.println("清除标签信息数量:" + vodTagRepository.cleanAllData());
+        songTags.forEach(item -> {
+            try {
+                VodTag tag = new VodTag();
+                tag.setCode(item.getCode());
+                tag.setTagName(item.getTagName());
+                tag.setParentCode(item.getParentCode());
+                tag.setRemark(item.getRemark());
+                tag.setSort(item.getSort());
+                tag.setStatus(item.getStatus());
+                tag.setCreatedAt(item.getCreatedAt());
+                tag.setUpdatedAt(item.getUpdatedAt());
+                tag.setDeletedAt(item.getDeletedAt());
+                VodTag save = vodTagRepository.insert(tag);
+                System.out.println("保存标签信息:" + CommonUtil.OBJECT_MAPPER.writeValueAsString(save));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+    }
+
+    private void mergeAlbum() {
+        List<SongAlbum> songAlbums = songAlbumRepository.findAll();
+        System.out.println("清除专辑信息数量:" + vodSongAlbumRepository.cleanAllData());
+        songAlbums.forEach(item -> {
+            try {
+                VodAlbum album = new VodAlbum();
+                album.setCode(item.getCode());
+                album.setAlbumName(item.getAlbumName());
+                album.setImgFilePath(item.getImgFilePath());
+                album.setRemark(item.getRemark());
+                album.setCreatedAt(item.getCreatedAt());
+                album.setUpdatedAt(item.getUpdatedAt());
+                album.setDeletedAt(item.getDeletedAt());
+                VodAlbum save = vodSongAlbumRepository.insert(album);
+                System.out.println("保存专辑信息:" + CommonUtil.OBJECT_MAPPER.writeValueAsString(save));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+    }
 
     private void mergeArea() {
         List<SongArea> parts = songAreaRepository.findAll();
@@ -312,6 +369,7 @@ public class MigrateMongoSong2VodService extends MigrateBase {
         vodSong.setLyricist(item.getLyricist());
         vodSong.setComposer(item.getComposer());
         vodSong.setLanguage(item.getLanguage());
+        vodSong.setTag(item.getTag());
         vodSong.setHot(item.getHot());
         vodSong.setHotSum(item.getHotSum());
         vodSong.setRecommend(item.getRecommend());

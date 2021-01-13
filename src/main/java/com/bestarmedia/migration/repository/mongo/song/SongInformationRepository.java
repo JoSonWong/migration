@@ -41,7 +41,15 @@ public class SongInformationRepository {
         return songMongoTemplate.find(new Query(Criteria.where("song_name").is(songName).and("singer.name").in(singers)), SongInformation.class);
     }
 
+    public SongInformation findBySongNameAndSingerName(String songName, List<String> singers) {
+        return songMongoTemplate.findOne(new Query(Criteria.where("song_name").is(songName).and("singer.name").in(singers)), SongInformation.class);
+    }
+
     public SongInformation insert(SongInformation song) {
+        SongInformation songInformation = findByCode(song.getCode());
+        if (songInformation != null) {
+            return songInformation;
+        }
         return songMongoTemplate.insert(song);
     }
 

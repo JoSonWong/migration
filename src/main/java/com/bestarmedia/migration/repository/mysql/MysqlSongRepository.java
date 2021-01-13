@@ -15,7 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-@Repository()
+@Repository(value = "mysqlSongRepository")
 public interface MysqlSongRepository extends JpaRepository<Song, Integer>, JpaSpecificationExecutor<Song> {
 
     @Override
@@ -109,4 +109,10 @@ public interface MysqlSongRepository extends JpaRepository<Song, Integer>, JpaSp
 
 
     List<Song> findAllBySongName(String songName);
+
+
+    @Modifying(clearAutomatically = true)
+    @Transactional
+    @Query(value = "update vod_song set local_lyric_file_path=:local_lyric_file_path ,lyric_file_md5=:lyric_file_md5  where s_id=:id", nativeQuery = true)
+    int updateReleaseTimeAndTag(@Param(value = "local_lyric_file_path") String local_lyric_file_path, @Param(value = "lyric_file_md5") String lyric_file_md5, @Param(value = "id") int id);
 }

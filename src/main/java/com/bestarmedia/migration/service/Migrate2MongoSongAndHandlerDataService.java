@@ -9,18 +9,17 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class Migrate2MongoSongAndHandlerDataService {
 
-    private final FillDataService fillDataService;
+    //    private final FillDataService fillDataService;
     private final MigrateMySQL2MongoSongService migrateMySQL2MongoSongService;
     private final MongoSongMusicianScannerService mongoSongMusicianScannerService;
     private final MongoSongMusicianCleanerService mongoSongMusicianCleanerService;
 
     @Autowired
     public Migrate2MongoSongAndHandlerDataService(
-            FillDataService fillDataService,
             MigrateMySQL2MongoSongService migrateMySQL2MongoSongService,
             MongoSongMusicianScannerService mongoSongMusicianScannerService,
             MongoSongMusicianCleanerService mongoSongMusicianCleanerService) {
-        this.fillDataService = fillDataService;
+//        this.fillDataService = fillDataService;
         this.migrateMySQL2MongoSongService = migrateMySQL2MongoSongService;
         this.mongoSongMusicianScannerService = mongoSongMusicianScannerService;
         this.mongoSongMusicianCleanerService = mongoSongMusicianCleanerService;
@@ -40,9 +39,6 @@ public class Migrate2MongoSongAndHandlerDataService {
         mongoSongMusicianCleanerService.cleanMusician();
         System.out.println("清理 Mongo.Song 中无关联音乐人耗时：" + (System.currentTimeMillis() - current) / 1000);
 
-        current = System.currentTimeMillis();
-        fillDataService.fillReleaseTime();
-        System.out.println("从 EXCEL 中更新发行时间耗时：" + (System.currentTimeMillis() - current) / 1000);
 
         String tip = "从 MySQL 迁移数据到 Mongo.Song 并清理数据总耗时:" + (System.currentTimeMillis() - total) / 1000;
         System.out.println(tip);

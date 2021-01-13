@@ -35,7 +35,7 @@ spring:
   data:
     mongodb:
       primary:
-        database: bestarmedia_vod_cloud
+        database: bestarmedia_ktv
         uri: 192.168.1.146:27017
       secondary:
         database: bestarmedia_song_cloud
