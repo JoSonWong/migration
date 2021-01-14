@@ -18,15 +18,15 @@ public class Part extends MysqlBaseModel {
 
     @Id
     @Column(name = "id")
-    private Integer id;
+    private int id;
 
     @Column(name = "name")
     private String name;
 
     @Column(name = "sort")
-    private Integer sort;
+    private int sort;
 
     @Column(name = "is_show")
-    private Integer isShow;
+    private int isShow;
 
 }

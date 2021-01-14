@@ -34,7 +34,7 @@ public class SongAlbumRepository {
         return songMongoTemplate.findOne(new Query(Criteria.where("albumName").is(name)), SongAlbum.class);
     }
 
-    public SongAlbum insert(String albumName) {
+    public SongAlbum insert(String albumName, String songName, String singer) {
         Query query = new Query();
         query.with(Sort.by(Sort.Direction.DESC, "code"));
         SongAlbum songAlbum = songMongoTemplate.findOne(query, SongAlbum.class);
@@ -42,7 +42,7 @@ public class SongAlbumRepository {
         if (songAlbum != null) {
             code = songAlbum.getCode() + 1;
         }
-        SongAlbum insert = new SongAlbum(code, albumName, "", "MySQL数据导入");
+        SongAlbum insert = new SongAlbum(code, albumName, "", "从歌曲信息：" + songName + "-" + singer + " 导入");
         insert.setCreatedAt(new Date());
         insert.setUpdatedAt(new Date());
         insert.setCreateUser(0);

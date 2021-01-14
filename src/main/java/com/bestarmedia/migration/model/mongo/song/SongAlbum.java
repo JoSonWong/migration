@@ -16,7 +16,7 @@ import org.springframework.data.mongodb.core.mapping.Field;
 public class SongAlbum extends SongAuditing {
 
     @Field(value = "code")
-    private Integer code;
+    private int code;
 
     @Field(value = "album_name")
     private String albumName;

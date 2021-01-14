@@ -17,10 +17,10 @@ public class SongSimple implements Serializable {
 
     @Id
     @Column(name = "id")
-    private Integer id;//自增ID
+    private int id;//自增ID
 
     @Column(name = "s_id")
-    private Integer songId;//歌曲id（理论上与自增id相等）
+    private int songId;//歌曲id（理论上与自增id相等）
 
     @Column(name = "song_name")
     private String songName;//歌名
@@ -72,6 +72,6 @@ public class SongSimple implements Serializable {
 
 
     @Column(name = "video_type")
-    private Integer videoType;//视频类型
+    private int videoType;//视频类型
 
 }

@@ -19,7 +19,7 @@ import java.util.List;
 public class VodSinger extends Auditing {
 
     @Field(value = "code")
-    private Integer code;//ID
+    private int code;//ID
 
     @Field(value = "musician_type")
     private List<Integer> musicianType;//音乐人类型  1歌手   2曲   3词
@@ -31,22 +31,22 @@ public class VodSinger extends Auditing {
     private String musicianName;//音乐人名
 
     @Field(value = "word_count")
-    private Integer wordCount;//字数
+    private int wordCount;//字数
 
     @Field(value = "hot")
-    private Long hot;//热度
+    private long hot;//热度
 
     @Field(value = "hot_sum")
-    private Long hotSum;//热度
+    private long hotSum;//热度
 
     @Field(value = "sex")
-    private Integer sex;//性别 1 男 2 女  3混合组合
+    private int sex;//性别 1 男 2 女  3混合组合
 
     @Field(value = "birthday")
     private Date birthday;//生日
 
     @Field(value = "role")
-    private Integer role;//身份 0 歌手 1 组合 2 公司
+    private int role;//身份 0 歌手 1 组合 2 公司
 
     @Field(value = "part")
     private CodeName part;//地区
@@ -55,7 +55,7 @@ public class VodSinger extends Auditing {
     private String imgFilePath;//封面
 
     @Field(value = "status")
-    private Integer status;//是否上架
+    private int status;//是否上架
 
     @Field(value = "alias")
     private List<String> alias;//别名

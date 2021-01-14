@@ -67,9 +67,10 @@ public class MigrateBase {
         if (StringUtils.isEmpty(original)) {
             file.setFileName(song.getMediaFilePath().substring(song.getMediaFilePath().lastIndexOf("/") + 1));
             file.setFilePath("https://song-enterprise.oss-cn-shenzhen.aliyuncs.com/song/h264/" + file.getFileName());
+            file.setLyricFilePath("");
         } else {
-            file.setOriginalFilePath(original);
-            file.setAccompanimentFilePath(accompaniment);
+            file.setOriginalAudioFilePath(original);
+            file.setAccompanimentAudioFilePath(accompaniment);
             file.setLyricFilePath(lyric);
         }
         file.setFormatName("H264");
@@ -81,7 +82,6 @@ public class MigrateBase {
         file.setHot(0L);
         file.setRecommend(song.getSofthard());
         file.setStatus(song.getStatus());
-        file.setLyricFilePath("");
         if (!StringUtils.isEmpty(song.getScoreStandardFilePath()) && !StringUtils.isEmpty(song.getCoordinateFilePath())) {
             file.setScoreFilePath(song.getScoreStandardFilePath());
             file.setCoordinatesFilePath(song.getCoordinateFilePath());

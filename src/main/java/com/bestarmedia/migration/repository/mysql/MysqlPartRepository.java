@@ -7,7 +7,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
-@Repository("mysqlPartRepository")
+@Repository
 public interface MysqlPartRepository extends JpaRepository<Part, Integer>, JpaSpecificationExecutor<Part> {
 
     List<Part> findAllByDeletedAtIsNullOrderBySortAscIdAsc();

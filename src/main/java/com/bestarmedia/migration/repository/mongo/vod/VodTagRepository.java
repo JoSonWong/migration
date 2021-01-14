@@ -34,19 +34,6 @@ public class VodTagRepository {
         return vodMongoTemplate.findOne(new Query(Criteria.where("tagName").is(name)), VodTag.class);
     }
 
-    public VodTag insert(String tagName) {
-        Query query = new Query();
-        query.with(Sort.by(Sort.Direction.DESC, "code"));
-        VodTag songTag = vodMongoTemplate.findOne(query, VodTag.class);
-        int code = 1;
-        if (songTag != null) {
-            code = songTag.getCode() + 1;
-        }
-        VodTag insert = new VodTag(code, tagName, 1, 1, 0, "MySQL数据导入");
-        insert.setCreatedAt(new Date());
-        insert.setUpdatedAt(new Date());
-        return vodMongoTemplate.insert(insert);
-    }
 
     public VodTag insert(VodTag songTag) {
         return vodMongoTemplate.insert(songTag);

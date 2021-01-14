@@ -18,15 +18,15 @@ public class Language extends MysqlBaseModel {
 
     @Id
     @Column(name = "id")
-    private Integer id;
+    private int id;
 
     @Column(name = "language_name")
     private String languageName;
 
     @Column(name = "sort")
-    private Integer sort;
+    private int sort;
 
     @Column(name = "is_show")
-    private Integer isShow;
+    private int isShow;
 
 }

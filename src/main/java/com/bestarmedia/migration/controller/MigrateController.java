@@ -94,6 +94,12 @@ public class MigrateController {
         return JsonResponseHandler.success(map);
     }
 
+    @GetMapping("/v7.0/migration/mongo-song-to-vod/{typeFormats}/material")
+    public JsonResponse songMaterial2Vod(@PathVariable String typeFormats) {
+        HashMap<String, String> map = new HashMap<>();
+        map.put("tip", migrateMongoSong2VodService.mergeMaterial(typeFormats));
+        return JsonResponseHandler.success(map);
+    }
 
     @GetMapping("/v7.0/migration/fill-data/mp3-to-mongo-song")
     public JsonResponse fillMP3ToMongoSong(@RequestParam(value = "from", defaultValue = "0") Integer from,

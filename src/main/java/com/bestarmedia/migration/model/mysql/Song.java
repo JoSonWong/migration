@@ -18,25 +18,25 @@ public class Song extends MysqlBaseModel implements Serializable {
 
     @Id
     @Column(name = "id")
-    private Integer id;//自增ID
+    private int id;//自增ID
 
     @Column(name = "s_id")
-    private Integer songId;//歌曲id（理论上与自增id相等）
+    private int songId;//歌曲id（理论上与自增id相等）
 
     @Column(name = "old_sid")
-    private Integer oldSid;//旧的歌曲id
+    private int oldSid;//旧的歌曲id
 
     @Column(name = "song_code")
-    private Long songCode;//歌曲唯一标识
+    private long songCode;//歌曲唯一标识
 
     @Column(name = "word_count")
-    private Integer wordCount;//歌名字数
+    private int wordCount;//歌名字数
 
     @Column(name = "audio_track")
-    private Integer audioTrack;//原伴唱信息；1一轨原唱，2二轨原唱，3左原唱，4右原唱，5纯欣赏
+    private int audioTrack;//原伴唱信息；1一轨原唱，2二轨原唱，3左原唱，4右原唱，5纯欣赏
 
     @Column(name = "video_type")
-    private Integer videoType;//视频类型
+    private int videoType;//视频类型
 
     @OneToOne(targetEntity = VideoType.class)
     @JoinColumn(name = "video_type", referencedColumnName = "id", insertable = false, updatable = false)
@@ -44,13 +44,13 @@ public class Song extends MysqlBaseModel implements Serializable {
     private VideoType videoTypeDetail;
 
     @Column(name = "video_rhythm")
-    private Integer videoRhythm;//视频节奏
+    private int videoRhythm;//视频节奏
 
     @Column(name = "music_rhythm")
-    private Integer musicRhythm;//音乐节奏
+    private int musicRhythm;//音乐节奏
 
     @Column(name = "song_type_id")
-    private Integer songTypeId;//歌曲类型
+    private int songTypeId;//歌曲类型
 
     @OneToOne(targetEntity = SongType.class)
     @JoinColumn(name = "song_type_id", referencedColumnName = "id", insertable = false, updatable = false)
@@ -58,7 +58,7 @@ public class Song extends MysqlBaseModel implements Serializable {
     private SongType songType;
 
     @Column(name = "language_id")
-    private Integer languageId;//语种id
+    private int languageId;//语种id
 
     @OneToOne(targetEntity = Language.class)
     @JoinColumn(name = "language_id", referencedColumnName = "id", insertable = false, updatable = false)
@@ -66,43 +66,43 @@ public class Song extends MysqlBaseModel implements Serializable {
     private Language language;
 
     @Column(name = "hot")
-    private Long hot;//大数据热度
+    private long hot;//大数据热度
 
     @Column(name = "default_hot")
-    private Long defaultHot;//默认热度
+    private long defaultHot;//默认热度
 
     @Column(name = "lightness")
-    private Integer lightness;//明暗
+    private int lightness;//明暗
 
     @Column(name = "chroma")
-    private Integer chroma;//色度
+    private int chroma;//色度
 
     @Column(name = "saturation")
-    private Integer saturation;//饱和度
+    private int saturation;//饱和度
 
     @Column(name = "coldwarm")
-    private Integer coldwarm;//冷暖度
+    private int coldwarm;//冷暖度
 
     @Column(name = "mildsevere")
-    private Integer mildsevere;//
+    private int mildsevere;//
 
     @Column(name = "softhard")
-    private Integer softhard;//V6用于推荐度
+    private int softhard;//V6用于推荐度
 
     @Column(name = "intensity")
-    private Integer intensity;//强弱度
+    private int intensity;//强弱度
 
     @Column(name = "brightness")
-    private Integer brightness;//明快度
+    private int brightness;//明快度
 
     @Column(name = "excitability")
-    private Integer excitability;//兴奋度
+    private int excitability;//兴奋度
 
     @Column(name = "gorgeously")
-    private Integer gorgeously;//华丽度
+    private int gorgeously;//华丽度
 
     @Column(name = "source")
-    private Integer source;//来源：0,批量  1,单曲
+    private int source;//来源：0,批量  1,单曲
 
     @Column(name = "song_name")
     private String songName;//歌名
@@ -156,7 +156,7 @@ public class Song extends MysqlBaseModel implements Serializable {
     private String sourceFileMd5;//源文件md5
 
     @Column(name = "source_file_size")
-    private Long sourceFileSize;//源文件大小
+    private long sourceFileSize;//源文件大小
 
     @Column(name = "source_file_preview")
     private String sourceFilePreview;//源文件视频预览图片
@@ -168,13 +168,13 @@ public class Song extends MysqlBaseModel implements Serializable {
     private String localMediaFilePath;//本地媒体文件路径
 
     @Column(name = "local_exist_media_file")
-    private Integer localExistMediaFile;//本地是否存在文件
+    private int localExistMediaFile;//本地是否存在文件
 
     @Column(name = "media_file_md5")
     private String mediaFileMd5;//文件MD5
 
     @Column(name = "media_file_size")
-    private Long mediaFileSize;//文件大小，单位：B
+    private long mediaFileSize;//文件大小，单位：B
 
     @Column(name = "lyric_file_path")
     private String lyricFilePath;//歌词文件路径
@@ -186,7 +186,7 @@ public class Song extends MysqlBaseModel implements Serializable {
     private String lyricFileMd5;//文件md5
 
     @Column(name = "lyric_file_size")
-    private Long lyricFileSize;//文件md5
+    private long lyricFileSize;//文件md5
 
     @Column(name = "grade_file_path")
     private String scoreStandardFilePath;//得分标准
@@ -198,7 +198,7 @@ public class Song extends MysqlBaseModel implements Serializable {
     private String scoreStandardFileMd5;//文件md5
 
     @Column(name = "grade_file_size")
-    private Long scoreStandardFileSize;//文件大小，单位：B
+    private long scoreStandardFileSize;//文件大小，单位：B
 
     @Column(name = "coord_file_path")
     private String coordinateFilePath;//坐标
@@ -210,16 +210,16 @@ public class Song extends MysqlBaseModel implements Serializable {
     private String coordinateFileMd5;//本地评分基准文件相对路径
 
     @Column(name = "coord_file_size")
-    private Long coordinateFileSize;//文件大小，单位：B
+    private long coordinateFileSize;//文件大小，单位：B
 
     @Column(name = "duration")
-    private Integer duration;//时长，保存到秒
+    private int duration;//时长，保存到秒
 
     @Column(name = "resolution_width")
-    private Integer resolutionWidth;//分辨率宽
+    private int resolutionWidth;//分辨率宽
 
     @Column(name = "resolution_height")
-    private Integer resolutionHeight;//分辨率高
+    private int resolutionHeight;//分辨率高
 
     @Column(name = "note_one")
     private String noteOne;//备注一
@@ -231,40 +231,40 @@ public class Song extends MysqlBaseModel implements Serializable {
     private String noteThree;//备注三
 
     @Column(name = "volume")
-    private Integer volume;//初始音量0~100
+    private int volume;//初始音量0~100
 
     @Column(name = "publish")
-    private Integer publish;//0 未发布 1 发布 2 冷冻
+    private int publish;//0 未发布 1 发布 2 冷冻
 
     @Column(name = "ad_id")
-    private Integer adId;//广告id
+    private int adId;//广告id
 
     @Column(name = "is_red_packet")
-    private Integer isRedPacket;//是否红包歌曲
+    private int isRedPacket;//是否红包歌曲
 
     @Column(name = "song_source")
-    private Integer songSource;//歌曲来源 0 来源于网络
+    private int songSource;//歌曲来源 0 来源于网络
 
     @Column(name = "ktv_net_code")
     private String ktvNetCode;//独家的ktv_net_code
 
     @Column(name = "status")
-    private Integer status;//状态 0下架，1上架
+    private int status;//状态 0下架，1上架
 
     @Column(name = "vulgar")
-    private Integer vulgar;//低俗
+    private int vulgar;//低俗
 
     @Column(name = "illegal")
-    private Integer illegal;//文化部违禁
+    private int illegal;//文化部违禁
 
     @Column(name = "politics")
-    private Integer politics;//政治错误
+    private int politics;//政治错误
 
     @Column(name = "copyright")
-    private Integer copyright;//版权
+    private int copyright;//版权
 
     @Column(name = "other")
-    private Integer other;//其他的原因类型
+    private int other;//其他的原因类型
 
     @Column(name = "on_reason")
     private String onReason;//上架原因

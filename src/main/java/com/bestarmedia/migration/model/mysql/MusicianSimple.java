@@ -17,10 +17,10 @@ public class MusicianSimple implements Serializable {
 
     @Id
     @Column(name = "id")
-    private Integer id;//自增ID
+    private int id;//自增ID
 
     @Column(name = "m_id")
-    private Integer musicianId;//音乐人id
+    private int musicianId;//音乐人id
 
     @Column(name = "musician_name")
     private String musicianName;//音乐人名

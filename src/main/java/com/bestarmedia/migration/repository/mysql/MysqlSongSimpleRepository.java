@@ -15,7 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-@Repository(value = "mysqlSongSimpleRepository")
+@Repository
 public interface MysqlSongSimpleRepository extends JpaRepository<SongSimple, Integer>, JpaSpecificationExecutor<SongSimple> {
 
     @Override

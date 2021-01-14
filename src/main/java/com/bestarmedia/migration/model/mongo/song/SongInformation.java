@@ -21,7 +21,7 @@ import java.util.List;
 public class SongInformation extends SongAuditing {
 
     @Field(value = "code")
-    private Integer code;//歌曲唯一标识
+    private int code;//歌曲唯一标识
 
     @Field(value = "song_initial")
     private String songInitial;//简拼
@@ -30,7 +30,7 @@ public class SongInformation extends SongAuditing {
     private String songName;//歌名
 
     @Field(value = "word_count")
-    private Integer wordCount;//字数
+    private int wordCount;//字数
 
     @Field(value = "song_type")
     private SongType songType;//分类
@@ -51,16 +51,16 @@ public class SongInformation extends SongAuditing {
     private List<CodeName> tag;//标签
 
     @Field(value = "hot")
-    private Long hot;//真实热度
+    private long hot;//真实热度
 
     @Field(value = "hot_sum")
-    private Long hotSum;//总热度
+    private long hotSum;//总热度
 
     @Field(value = "recommend")
-    private Integer recommend;//推荐度
+    private int recommend;//推荐度
 
     @Field(value = "status")
-    private Integer status;//上下架状态 下架：0，上架：1
+    private int status;//上下架状态 下架：0，上架：1
 
     @Field(value = "note_one")
     private String noteOne;//备注1

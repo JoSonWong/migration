@@ -20,7 +20,7 @@ public class SongMusicianSimple {
     private String _id;
 
     @Field(value = "code")
-    private Integer code;//ID
+    private int code;//ID
 
     @Field(value = "musician_name")
     private String musicianName;//音乐人名
@@ -32,11 +32,11 @@ public class SongMusicianSimple {
     private String imgFilePath;//封面
 
     @Field(value = "mold")
-    private Integer mold;//(1为已入库0为未入库)
+    private int mold;//(1为已入库0为未入库)
 
     @Field(value = "search_keywords")
     private List<SearchKeyword> searchKeywords;//搜索关键字
 
     @Field(value = "hot_sum")
-    private Long hotSum;//热度
+    private long hotSum;//热度
 }

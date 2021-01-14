@@ -24,7 +24,7 @@ public class SongInformationSimple {
     private String _id;
 
     @Field(value = "code")
-    private Integer code;//歌曲唯一标识
+    private int code;//歌曲唯一标识
 
     @Field(value = "song_type")
     private SongType songType;//分类
@@ -39,5 +39,5 @@ public class SongInformationSimple {
     private List<CodeName> composer;//曲作者
 
     @Field(value = "hot_sum")
-    private Long hotSum;//总热度
+    private long hotSum;//总热度
 }

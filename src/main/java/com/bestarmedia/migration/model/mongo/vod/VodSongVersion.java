@@ -21,7 +21,7 @@ import java.util.List;
 public class VodSongVersion extends Auditing {
 
     @Field(value = "code")
-    private Integer code;//id
+    private int code;//id
 
     @Field(value = "song")
     private CodeName song;//歌曲id+歌名
@@ -30,13 +30,13 @@ public class VodSongVersion extends Auditing {
     private List<CodeName> singer;//歌星
 
     @Field(value = "song_code_old")
-    public Integer songCodeOld;
+    public int songCodeOld;
 
     @Field(value = "type")
-    private Integer type;//类型  1为视频，2为音画
+    private int type;//类型  1为视频，2为音画
 
     @Field(value = "versions_type")
-    private Integer versionsTypeCode;//关联版本表（视频-MV，视频-重制，音画-MV ...）
+    private int versionsTypeCode;//关联版本表（视频-MV，视频-重制，音画-MV ...）
 
     @Field(value = "source")
     private String source;//来源
@@ -45,22 +45,22 @@ public class VodSongVersion extends Auditing {
     private List<CodeName> album;//专辑
 
     @Field(value = "increase_hot")
-    private Long increaseHot;//热度增量
+    private long increaseHot;//热度增量
 
     @Field(value = "versions_hot")
-    private Long versionHot;//真实热度
+    private long versionHot;//真实热度
 
     @Field(value = "versions_hot_sum")
-    private Long versionHotSum;//显示热度
+    private long versionHotSum;//显示热度
 
     @Field(value = "recommend")
-    private Integer recommend;//推荐度
+    private int recommend;//推荐度
 
     @Field(value = "issue_time")
     private Date issueTime;//发行日期
 
     @Field(value = "status")
-    private Integer status;//状态
+    private int status;//状态
 
     @Field(value = "file")
     private List<VideoFile> videoFileList;//文件

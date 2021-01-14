@@ -17,16 +17,16 @@ import org.springframework.data.mongodb.core.mapping.Field;
 public class SongVersionsType extends SongAuditing {
 
     @Field(value = "code")
-    private Integer code;//id
+    private int code;//id
 
     @Field(value = "name")
     private String name;
 
     @Field(value = "type")
-    private Integer type;
+    private int type;
 
     @Field(value = "sort")
-    private Integer sort;
+    private int sort;
 
 
 }

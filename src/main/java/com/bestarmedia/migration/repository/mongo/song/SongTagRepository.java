@@ -34,7 +34,7 @@ public class SongTagRepository {
         return songMongoTemplate.findOne(new Query(Criteria.where("tagName").is(name)), SongTag.class);
     }
 
-    public SongTag insert(String tagName) {
+    public SongTag insert(String tagName, String songName, String singer) {
         Query query = new Query();
         query.with(Sort.by(Sort.Direction.DESC, "code"));
         SongTag songTag = songMongoTemplate.findOne(query, SongTag.class);
@@ -42,7 +42,7 @@ public class SongTagRepository {
         if (songTag != null) {
             code = songTag.getCode() + 1;
         }
-        SongTag insert = new SongTag(code, tagName, 1, 1, 0, "MySQL数据导入");
+        SongTag insert = new SongTag(code, tagName, 1, 1, 0, "从歌曲信息：" + songName + "-" + singer + " 导入");
         insert.setCreatedAt(new Date());
         insert.setUpdatedAt(new Date());
         insert.setCreateUser(0);

@@ -3,6 +3,7 @@ package com.bestarmedia.migration.service;
 
 import com.bestarmedia.migration.misc.CommonUtil;
 import com.bestarmedia.migration.misc.DateUtil;
+import com.bestarmedia.migration.model.mongo.MaterialVideoDTO;
 import com.bestarmedia.migration.model.mongo.VideoFile;
 import com.bestarmedia.migration.model.mongo.song.*;
 import com.bestarmedia.migration.model.mongo.vod.*;
@@ -11,8 +12,10 @@ import com.bestarmedia.migration.repository.mongo.vod.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
 @Slf4j
@@ -27,6 +30,7 @@ public class MigrateMongoSong2VodService extends MigrateBase {
     private final SongSongVersionTypeRepository songSongVersionTypeRepository;
     private final SongAlbumRepository songAlbumRepository;
     private final SongTagRepository songTagRepository;
+    private final SongMaterialRepository songMaterialRepository;
 
     private final VodSingerRepository vodSingerRepository;
     private final VodSongVersionRepository vodSongVersionRepository;
@@ -37,6 +41,7 @@ public class MigrateMongoSong2VodService extends MigrateBase {
     private final VodSongVersionTypeRepository vodSongVersionTypeRepository;
     private final VodSongAlbumRepository vodSongAlbumRepository;
     private final VodTagRepository vodTagRepository;
+    private final VodMaterialRepository vodMaterialRepository;
 
     private int versionCount = 0;
     private int songCount = 0;
@@ -54,6 +59,7 @@ public class MigrateMongoSong2VodService extends MigrateBase {
                                        SongSongVersionTypeRepository songSongVersionTypeRepository,
                                        SongAlbumRepository songAlbumRepository,
                                        SongTagRepository songTagRepository,
+                                       SongMaterialRepository songMaterialRepository,
 
                                        VodSingerRepository vodSingerRepository,
                                        VodSongVersionRepository vodSongVersionRepository,
@@ -63,7 +69,8 @@ public class MigrateMongoSong2VodService extends MigrateBase {
                                        VodSongTypeRepository vodSongTypeRepository,
                                        VodSongVersionTypeRepository vodSongVersionTypeRepository,
                                        VodSongAlbumRepository vodSongAlbumRepository,
-                                       VodTagRepository vodTagRepository) {
+                                       VodTagRepository vodTagRepository,
+                                       VodMaterialRepository vodMaterialRepository) {
         this.songAreaRepository = songAreaRepository;
         this.songInformationRepository = songInformationRepository;
         this.songLanguageRepository = songLanguageRepository;
@@ -73,6 +80,7 @@ public class MigrateMongoSong2VodService extends MigrateBase {
         this.songSongVersionTypeRepository = songSongVersionTypeRepository;
         this.songAlbumRepository = songAlbumRepository;
         this.songTagRepository = songTagRepository;
+        this.songMaterialRepository = songMaterialRepository;
 
         this.vodSingerRepository = vodSingerRepository;
         this.vodSongVersionRepository = vodSongVersionRepository;
@@ -83,13 +91,24 @@ public class MigrateMongoSong2VodService extends MigrateBase {
         this.vodSongVersionTypeRepository = vodSongVersionTypeRepository;
         this.vodSongAlbumRepository = vodSongAlbumRepository;
         this.vodTagRepository = vodTagRepository;
+        this.vodMaterialRepository = vodMaterialRepository;
 
     }
 
-    public String migrate(String typeFormat) {
+    public void setFormat(String typeFormat) {
         types.clear();
         formats.clear();
+        String[] typeFormats = typeFormat.split("@");
+        for (String tf : typeFormats) {
+            String[] tfs = tf.split(",");
+            types.put(Integer.parseInt(tfs[0]), true);
+            formats.put(tfs[1], true);
+        }
+    }
+
+    public String migrate(String typeFormat) {
         long currentTimeMillis = System.currentTimeMillis();
+        mergeMaterial(typeFormat);
         mergeLanguage();
         mergeArea();
         mergeSongType();
@@ -99,12 +118,6 @@ public class MigrateMongoSong2VodService extends MigrateBase {
 
         migrateMusician();
 
-        String[] typeFormats = typeFormat.split(";");
-        for (String tf : typeFormats) {
-            String[] tfs = tf.split(",");
-            types.put(Integer.parseInt(tfs[0]), true);
-            formats.put(tfs[1], true);
-        }
         if (types.size() > 0 && formats.size() > 0) {
             migrateVersion();
         }
@@ -113,6 +126,52 @@ public class MigrateMongoSong2VodService extends MigrateBase {
         return tip;
     }
 
+    public String mergeMaterial(String typeFormat) {
+        setFormat(typeFormat);
+
+        long time = System.currentTimeMillis();
+        AtomicInteger atomicInteger = new AtomicInteger(0);
+        List<SongMaterial> materials = songMaterialRepository.findAll();
+        System.out.println("清除素材信息数量:" + vodMaterialRepository.cleanAllData());
+        materials.forEach(item -> {
+            try {
+                List<MaterialVideoDTO> materialVideoDTOS = new ArrayList<>();
+
+                if (item.getType() == 2 && item.getVideo() != null) {//视频类型
+                    item.getVideo().forEach(videoDTO -> {
+                        if (formats.containsKey(videoDTO.getFormatName())) {
+                            materialVideoDTOS.add(videoDTO);
+                        }
+                    });
+                }
+
+                if ((item.getType() == 2 && !materialVideoDTOS.isEmpty()) || (item.getType() != 2 && !StringUtils.isEmpty(item.getImgFilePath()))) {
+                    VodMaterial material = new VodMaterial();
+                    material.setCode(item.getCode());
+                    material.setMaterialName(item.getMaterialName());
+                    material.setType(item.getType());
+                    material.setVideo(item.getType() == 2 ? materialVideoDTOS : null);
+                    material.setImgFilePath(item.getType() != 2 ? item.getImgFilePath() : null);
+                    material.setSongType(item.getSongType());
+                    material.setMusicianCode(item.getMusicianCode());
+                    material.setTag(item.getTag());
+                    material.setSort(item.getSort());
+                    material.setStatus(item.getStatus());
+                    material.setRemark(item.getRemark());
+                    material.setCreatedAt(item.getCreatedAt());
+                    material.setUpdatedAt(item.getUpdatedAt());
+                    material.setDeletedAt(item.getDeletedAt());
+                    VodMaterial save = vodMaterialRepository.insert(material);
+                    System.out.println("保存素材信息:" + CommonUtil.OBJECT_MAPPER.writeValueAsString(save));
+                    atomicInteger.getAndIncrement();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+
+        return "素材迁移总数:" + atomicInteger.get() + " 耗时:" + (System.currentTimeMillis() - time) / 1000;
+    }
 
     private void mergeTag() {
         List<SongTag> songTags = songTagRepository.findAll();

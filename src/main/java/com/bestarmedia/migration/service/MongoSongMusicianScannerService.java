@@ -187,13 +187,13 @@ public class MongoSongMusicianScannerService {
                             SongMusician musician = songMusicianRepository.findSingerByName(name);
                             if (musician == null) {
                                 SongMusician insertSave = songMusicianRepository.insert(createSongMusician(type, name));
-                                Integer code = insertSave.getCode();
+                                int code = insertSave.getCode();
                                 String mn = insertSave.getMusicianName();
                                 System.out.println("创建音乐人：" + CommonUtil.OBJECT_MAPPER.writeValueAsString(insertSave));
                                 updateSearchKeywords(insertSave);
                                 createdMusicianCount++;
                                 names.add(new CodeName(code, mn));
-                                if (!item.getCode().equals(insertSave.getCode())) {
+                                if (item.getCode() != (insertSave.getCode())) {
                                     atomicBoolean.set(true);
                                 }
                             } else {
@@ -213,7 +213,7 @@ public class MongoSongMusicianScannerService {
                                     updatedMusicianCount++;
                                 }
                                 names.add(new CodeName(musician.getCode(), musician.getMusicianName()));
-                                if (!item.getCode().equals(musician.getCode())) {
+                                if (item.getCode() != (musician.getCode())) {
                                     atomicBoolean.set(true);
                                 }
                             }

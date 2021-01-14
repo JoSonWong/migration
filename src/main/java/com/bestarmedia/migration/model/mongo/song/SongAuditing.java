@@ -13,8 +13,8 @@ import java.util.Date;
 public class SongAuditing extends Auditing {
 
     @Field(value = "create_user")
-    private Integer createUser;
+    private int createUser;
 
     @Field(value = "update_user")
-    private Integer updateUser;
+    private int updateUser;
 }

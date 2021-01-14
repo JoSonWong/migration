@@ -11,7 +11,7 @@ import org.springframework.data.mongodb.core.mapping.Field;
 public class CodeName {
 
     @Field(value = "code")
-    private Integer code;//id
+    private int code;//id
 
     @Field(value = "name")
     private String name;//名

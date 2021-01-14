@@ -18,11 +18,11 @@ public class VideoType extends MysqlBaseModel {
 
     @Id
     @Column(name = "id")
-    private Integer id;
+    private int id;
 
     @Column(name = "name")
     private String name;
 
     @Column(name = "sort")
-    private Integer sort;
+    private int sort;
 }

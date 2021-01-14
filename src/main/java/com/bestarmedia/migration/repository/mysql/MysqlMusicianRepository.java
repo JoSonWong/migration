@@ -14,7 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-@Repository("mysqlMusicianRepository")
+@Repository
 public interface MysqlMusicianRepository extends JpaRepository<Musician, Integer>, JpaSpecificationExecutor<Musician> {
     /**
      * 动态查询.

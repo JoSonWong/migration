@@ -21,7 +21,7 @@ public class SongSongVersionSimple {
     private String _id;
 
     @Field(value = "code")
-    private Integer code;//id
+    private int code;//id
 
     @Field(value = "song")
     private CodeName song;//歌曲id+歌名
@@ -39,6 +39,6 @@ public class SongSongVersionSimple {
     private List<CodeName> publisher;//出品权利人
 
     @Field(value = "versions_hot_sum")
-    private Long versionHotSum;//显示热度
+    private long versionHotSum;//显示热度
 
 }

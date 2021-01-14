@@ -16,19 +16,19 @@ import org.springframework.data.mongodb.core.mapping.Field;
 public class SongTag extends SongAuditing {
 
     @Field(value = "code")
-    private Integer code;
+    private int code;
 
     @Field(value = "tag_name")
     private String tagName;
 
     @Field(value = "status")
-    private Integer status;
+    private int status;
 
     @Field(value = "sort")
-    private Integer sort;
+    private int sort;
 
     @Field(value = "parent_code")
-    private Integer parentCode;
+    private int parentCode;
 
     @Field(value = "remark")
     private String remark;

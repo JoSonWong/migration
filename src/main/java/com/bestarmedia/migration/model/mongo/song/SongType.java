@@ -12,13 +12,13 @@ import org.springframework.data.mongodb.core.mapping.Field;
 public class SongType extends CodeName {
 
     @Field(value = "parent_code")
-    private Integer parentCode;//id
+    private int parentCode;//id
 
     @Field(value = "parent_name")
     private String parentName;//名
 
 
-    public SongType(Integer code, String name, Integer parentCode, String parentName) {
+    public SongType(int code, String name, int parentCode, String parentName) {
         super(code, name);
         this.parentCode = parentCode;
         this.parentName = parentName;

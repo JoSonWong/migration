@@ -24,11 +24,11 @@ public abstract class MysqlBaseModel {
 
     @JsonProperty(value = "create_user")
     @Column(name = "create_user")
-    private Integer createUser;
+    private int createUser;
 
     @JsonProperty(value = "update_user")
     @Column(name = "update_user")
-    private Integer updateUser;
+    private int updateUser;
 
     @JsonProperty(value = "created_at")
     @CreatedDate

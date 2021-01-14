@@ -19,20 +19,20 @@ public class SongType extends MysqlBaseModel {
 
     @Id
     @Column(name = "id")
-    private Integer id;
+    private int id;
 
     @Column(name = "p_id")
-    private Integer parentId;
+    private int parentId;
 
     @Column(name = "name")
     private String name;
 
     @Column(name = "sort")
-    private Integer sort;
+    private int sort;
 
     @Column(name = "light_mode")
-    private Integer lightMode;
+    private int lightMode;
 
     @Column(name = "is_show")
-    private Integer isShow;
+    private int isShow;
 }

@@ -22,7 +22,7 @@ import java.util.List;
 public class VodSong extends Auditing {
 
     @Field(value = "code")
-    private Integer code;//歌曲唯一标识
+    private int code;//歌曲唯一标识
 
     @Field(value = "song_initial")
     private String songInitial;//简拼
@@ -31,7 +31,7 @@ public class VodSong extends Auditing {
     private String songName;//歌名
 
     @Field(value = "word_count")
-    private Integer wordCount;//字数
+    private int wordCount;//字数
 
     @Field(value = "song_type")
     private CodeName songType;//分类
@@ -52,19 +52,19 @@ public class VodSong extends Auditing {
     private List<CodeName> tag;//标签
 
     @Field(value = "hot")
-    private Long hot;//真实热度
+    private long hot;//真实热度
 
     @Field(value = "hot_sum")
-    private Long hotSum;//总热度
+    private long hotSum;//总热度
 
     @Field(value = "recommend")
-    private Integer recommend;//推荐度
+    private int recommend;//推荐度
 
     @Field(value = "status")
-    private Integer status;//上下架状态 下架：0，上架：1
+    private int status;//上下架状态 下架：0，上架：1
 
     @Field(value = "disk_file_status")
-    private Integer diskFileStatus = 1;//是否本地有文件
+    private int diskFileStatus = 1;//是否本地有文件
 
 //    @Field(value = "version_simples")
 //    private List<SongVersionSimple> songVersionSimples;
