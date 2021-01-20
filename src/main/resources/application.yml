@@ -35,10 +35,13 @@ spring:
   data:
     mongodb:
       primary:
-        database: bestarmedia_ktv
+        database: bestarmedia_vod_cloud
         uri: 192.168.1.146:27017
       secondary:
         database: bestarmedia_song_cloud
+        uri: 192.168.1.146:27017
+      third:
+        database: bestarmedia_ktv
         uri: 192.168.1.146:27017
 # mybatis配置
 mybatis:

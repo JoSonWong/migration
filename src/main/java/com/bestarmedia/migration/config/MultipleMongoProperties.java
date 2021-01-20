@@ -9,6 +9,15 @@ import org.springframework.context.annotation.Primary;
 @Configuration
 public class MultipleMongoProperties {
 
+    @Bean(name = "ktvMongoProperties")
+    @Primary
+    @ConfigurationProperties(prefix = "spring.data.mongodb.third")
+    public MongoProperties ktvMongoProperties() {
+        System.out.println("-------------------- ktvMongoProperties init ---------------------");
+        return new MongoProperties();
+    }
+
+
     @Bean(name = "vodMongoProperties")
     @Primary
     @ConfigurationProperties(prefix = "spring.data.mongodb.primary")
