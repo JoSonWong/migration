@@ -64,31 +64,36 @@ public class MigrateBase {
     VideoFile createFileDto(Song song, String original, String accompaniment, String lyric) {
         VideoFile file = new VideoFile();
         file.setCode(song.getSongId());
-        if (StringUtils.isEmpty(original)) {
+        if (StringUtils.isEmpty(original)) {//视频版本
             file.setFileName(song.getMediaFilePath().substring(song.getMediaFilePath().lastIndexOf("/") + 1));
             file.setFilePath("https://song-enterprise.oss-cn-shenzhen.aliyuncs.com/song/h264/" + file.getFileName());
             file.setLyricFilePath("");
+            file.setResolutionWidth(song.getResolutionWidth());
+            file.setResolutionHeight(song.getResolutionHeight());
+            if (!StringUtils.isEmpty(song.getScoreStandardFilePath()) && !StringUtils.isEmpty(song.getCoordinateFilePath())) {
+                file.setScoreFilePath(song.getScoreStandardFilePath());
+                file.setCoordinatesFilePath(song.getCoordinateFilePath());
+            } else {
+                file.setScoreFilePath("");
+                file.setCoordinatesFilePath("");
+            }
+            file.setVolume(song.getVolume());
         } else {
             file.setOriginalAudioFilePath(original);
             file.setAccompanimentAudioFilePath(accompaniment);
             file.setLyricFilePath(lyric);
+            file.setResolutionWidth(1920);
+            file.setResolutionHeight(1080);
+            file.setScoreFilePath(null);
+            file.setCoordinatesFilePath(null);
+            file.setVolume(80);
         }
         file.setFormatName("H264");
         file.setVideoType(song.getVideoTypeDetail().getName());
-        file.setResolutionWidth(song.getResolutionWidth());
-        file.setResolutionHeight(song.getResolutionHeight());
         file.setAudioTrack(song.getAudioTrack());
-        file.setVolume(song.getVolume());
         file.setHot(0L);
         file.setRecommend(song.getSofthard());
-        file.setStatus(song.getStatus());
-        if (!StringUtils.isEmpty(song.getScoreStandardFilePath()) && !StringUtils.isEmpty(song.getCoordinateFilePath())) {
-            file.setScoreFilePath(song.getScoreStandardFilePath());
-            file.setCoordinatesFilePath(song.getCoordinateFilePath());
-        } else {
-            file.setScoreFilePath("");
-            file.setCoordinatesFilePath("");
-        }
+        file.setStatus(1);
         file.setRemark("");
         return file;
     }

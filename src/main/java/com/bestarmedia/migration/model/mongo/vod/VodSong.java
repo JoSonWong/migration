@@ -66,7 +66,4 @@ public class VodSong extends Auditing {
     @Field(value = "disk_file_status")
     private int diskFileStatus = 1;//是否本地有文件
 
-//    @Field(value = "version_simples")
-//    private List<SongVersionSimple> songVersionSimples;
-
 }

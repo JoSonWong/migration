@@ -3,9 +3,9 @@ package com.bestarmedia.migration.controller;
 import com.bestarmedia.migration.misc.JsonResponse;
 import com.bestarmedia.migration.misc.JsonResponseHandler;
 import com.bestarmedia.migration.service.Migrate2MongoSongAndHandlerDataService;
+import com.bestarmedia.migration.service.MigrateMongoSong2KtvService;
 import com.bestarmedia.migration.service.MigrateMongoSong2VodService;
 import com.bestarmedia.migration.service.MigrateMySQL2MongoSongService;
-import com.bestarmedia.migration.service.MongoSongMusicianScannerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -18,20 +18,19 @@ import java.util.HashMap;
 public class MigrateController {
 
     private final MigrateMySQL2MongoSongService migrateMySQL2MongoSongService;
-    private final MongoSongMusicianScannerService mongoSongMusicianScannerService;
     private final Migrate2MongoSongAndHandlerDataService migrate2MongoSongAndHandlerDataService;
     private final MigrateMongoSong2VodService migrateMongoSong2VodService;
+    private final MigrateMongoSong2KtvService migrateMongoSong2KtvService;
 
     @Autowired
     public MigrateController(Migrate2MongoSongAndHandlerDataService migrate2MongoSongAndHandlerDataService,
                              MigrateMongoSong2VodService migrateMongoSong2VodService,
                              MigrateMySQL2MongoSongService migrateMySQL2MongoSongService,
-                             MongoSongMusicianScannerService mongoSongMusicianScannerService) {
+                             MigrateMongoSong2KtvService migrateMongoSong2KtvService) {
         this.migrate2MongoSongAndHandlerDataService = migrate2MongoSongAndHandlerDataService;
         this.migrateMongoSong2VodService = migrateMongoSong2VodService;
         this.migrateMySQL2MongoSongService = migrateMySQL2MongoSongService;
-        this.mongoSongMusicianScannerService = mongoSongMusicianScannerService;
-
+        this.migrateMongoSong2KtvService = migrateMongoSong2KtvService;
     }
 
     @GetMapping("/v7.0/migration/mysql-to-mongo/{typeFormats}")
@@ -78,22 +77,6 @@ public class MigrateController {
     }
 
 
-    @GetMapping("/v7.0/migration/mongo-song/song-musician/scan")
-    public JsonResponse scanSongMusician() {
-        HashMap<String, String> map = new HashMap<>();
-        String tip2Song = this.mongoSongMusicianScannerService.scanSongMusician();
-        map.put("tip", tip2Song);
-        return JsonResponseHandler.success(map);
-    }
-
-    @GetMapping("/v7.0/migration/mongo-song/version-musician/scan")
-    public JsonResponse scanVersionMusician() {
-        HashMap<String, String> map = new HashMap<>();
-        String tip2Song = this.mongoSongMusicianScannerService.scanVersionMusician();
-        map.put("tip", tip2Song);
-        return JsonResponseHandler.success(map);
-    }
-
     @GetMapping("/v7.0/migration/mongo-song-to-vod/{typeFormats}/material")
     public JsonResponse songMaterial2Vod(@PathVariable String typeFormats) {
         HashMap<String, String> map = new HashMap<>();
@@ -106,6 +89,21 @@ public class MigrateController {
                                            @RequestParam(value = "to", defaultValue = "0") Integer to) {
         HashMap<String, String> map = new HashMap<>();
         map.put("tip", migrateMySQL2MongoSongService.fillMP3(from, to));
+        return JsonResponseHandler.success(map);
+    }
+
+
+    @GetMapping("/v7.0/migration/mongo-song-to-ktv/{typeFormats}")
+    public JsonResponse toSong2Ktv(@PathVariable String typeFormats) {
+        HashMap<String, String> map = new HashMap<>();
+        map.put("tip", migrateMongoSong2KtvService.migrate(typeFormats));
+        return JsonResponseHandler.success(map);
+    }
+
+    @GetMapping("/v7.0/migration/mongo-song-to-ktv-song/{typeFormats}")
+    public JsonResponse toSong2Ktv(@PathVariable String typeFormats, @RequestParam(value = "from") Integer from) {
+        HashMap<String, String> map = new HashMap<>();
+        map.put("tip", migrateMongoSong2KtvService.migrateVersion2Ktv(typeFormats, from));
         return JsonResponseHandler.success(map);
     }
 }

@@ -63,6 +63,9 @@ public class VodSongVersion extends Auditing {
     private int status;//状态
 
     @Field(value = "file")
-    private List<VideoFile> videoFileList;//文件
+    private List<VideoFile> file;//文件
+
+    @Field(value = "ktv_net_code")
+    private List<String> ktvNetCode;//定向KTV编号
 
 }

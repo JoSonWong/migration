@@ -29,6 +29,12 @@ public class SongSongVersionRepository {
 
 
     public SongSongVersion insert(SongSongVersion vodSongVersion) {
+        if (findByCode(vodSongVersion.getCode()) != null) {
+            int code = findMaxCode() + 1;
+            vodSongVersion.setCode(code);
+            vodSongVersion.getVideoFileList().forEach(item ->
+                    item.setCode(code));
+        }
         return songMongoTemplate.insert(vodSongVersion);
     }
 
@@ -176,7 +182,7 @@ public class SongSongVersionRepository {
 
     public int findMaxCode() {
         Query query = new Query();
-        query.with(Sort.by(Sort.Direction.DESC, "code"));
+        query.with(Sort.by(Sort.Direction.DESC, "code")).limit(1);
         SongSongVersion songSongVersion = songMongoTemplate.findOne(query, SongSongVersion.class);
         return songSongVersion == null ? 0 : songSongVersion.getCode();
     }
@@ -187,6 +193,11 @@ public class SongSongVersionRepository {
         query.addCriteria(Criteria.where("type").is(2));
         DeleteResult result = songMongoTemplate.remove(query, SongSongVersion.class);
         return result.getDeletedCount();       //返回执行的条
+    }
+
+
+    public List<SongSongVersion> findSongVersion(Integer songCode) {
+        return songMongoTemplate.find(new Query(Criteria.where("song.code").is(songCode)), SongSongVersion.class);
     }
 
 }

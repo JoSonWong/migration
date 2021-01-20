@@ -585,6 +585,13 @@ public class MigrateMySQL2MongoSongService extends MigrateBase {
         List<VideoFile> files = new ArrayList<>();
         files.add(createFileDto(song, original, accompaniment, lyric));
         version.setVideoFileList(files);
+
+        List<String> ktvNetCode = null;
+        if (!StringUtils.isEmpty(song.getKtvNetCode())) {//定向歌曲信息
+            ktvNetCode = new ArrayList<>();
+            ktvNetCode.add(song.getKtvNetCode());
+        }
+        version.setKtvNetCode(ktvNetCode);
         SongSongVersion save = songSongVersionRepository.insert(version);
         versionCount++;
         return save;
@@ -628,7 +635,7 @@ public class MigrateMySQL2MongoSongService extends MigrateBase {
                     SongSongVersion songSongVersion = songSongVersionRepository.findBySongNameAndSingerName(songName, singerList);
                     if (songSongVersion != null) {
 //                        System.out.println("第" + row + "行，歌名：" + songName + " 歌星：" + singer + " 匹配到版本信息 code：" + songSongVersion.getCode() + " 歌名：" + songSongVersion.getSong().getName());
-                        SongSongVersion songSongVersion1 = createSongVersion(songSongVersion, original, accompaniment, lyric);
+                        SongSongVersion songSongVersion1 = createMP3SongVersion(songSongVersion, original, accompaniment, lyric);
                         SongSongVersion insert = songSongVersionRepository.insert(songSongVersion1);
 //                        System.out.println("增加音画版本：" + CommonUtil.OBJECT_MAPPER.writeValueAsString(insert));
                         count.getAndIncrement();
@@ -685,7 +692,7 @@ public class MigrateMySQL2MongoSongService extends MigrateBase {
         return matchCount;
     }
 
-    private SongSongVersion createSongVersion(SongSongVersion version, String original, String accompaniment, String lyric) {
+    private SongSongVersion createMP3SongVersion(SongSongVersion version, String original, String accompaniment, String lyric) {
         version.set_id(null);
         int versionCode = songSongVersionRepository.findMaxCode() + 1;
         version.setCode(versionCode);
@@ -715,10 +722,11 @@ public class MigrateMySQL2MongoSongService extends MigrateBase {
             videoFile.setLyricFilePath(lyric);
             videoFile.setFileName(null);
             videoFile.setFilePath(null);
-            videoFile.setResolutionWidth(0);
-            videoFile.setResolutionHeight(0);
+            videoFile.setResolutionWidth(1920);
+            videoFile.setResolutionHeight(1080);
             videoFile.setScoreFilePath(null);
             videoFile.setCoordinatesFilePath(null);
+            videoFile.setStatus(1);
         } else {
             videoFile = createFileDto(versionCode, original, accompaniment, lyric);
         }
@@ -736,8 +744,10 @@ public class MigrateMySQL2MongoSongService extends MigrateBase {
         file.setFilePath(null);
         file.setFormatName("H264");
         file.setVideoType("");
-        file.setResolutionWidth(0);
-        file.setResolutionHeight(0);
+        file.setResolutionWidth(1920);
+        file.setResolutionHeight(1080);
+        file.setScoreFilePath(null);
+        file.setCoordinatesFilePath(null);
         file.setAudioTrack(0);
         file.setVolume(80);
         file.setHot(0L);

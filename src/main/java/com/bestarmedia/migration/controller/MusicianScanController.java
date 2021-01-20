@@ -23,6 +23,16 @@ public class MusicianScanController {
         this.mongoSongMusicianCleanerService = mongoSongMusicianCleanerService;
     }
 
+    @GetMapping("/v7.0/migration/scan-musician-clean")
+    public JsonResponse scanMusicianClean() {
+        HashMap<String, String> map = new HashMap<>();
+        map.put("scan_song", mongoSongMusicianScannerService.scanSongMusician());
+        map.put("scan_version", mongoSongMusicianScannerService.scanVersionMusician());
+        map.put("clean", mongoSongMusicianCleanerService.cleanMusician());
+        return JsonResponseHandler.success(map);
+    }
+
+
     @GetMapping("/v7.0/migration/song/musician-scan")
     public JsonResponse scanSongMusician() {
         HashMap<String, String> map = new HashMap<>();

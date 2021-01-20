@@ -79,6 +79,9 @@ public class SongSongVersion extends SongAuditing {
     @Field(value = "file")
     private List<VideoFile> videoFileList;//文件
 
+    @Field(value = "ktv_net_code")
+    private List<String> ktvNetCode;//定向KTV编号
+
     @Field(value = "note_one")
     private String noteOne;//备注1
 
