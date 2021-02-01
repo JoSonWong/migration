@@ -42,7 +42,7 @@ public class KtvMaterial extends Auditing {
     private String imgFilePath;
 
     @Field(value = "video")
-    private List<MaterialVideoDTO> video;
+    private MaterialVideoDTO video;
 
     @Field(value = "tag")
     private List<MaterialTagDTO> tag;

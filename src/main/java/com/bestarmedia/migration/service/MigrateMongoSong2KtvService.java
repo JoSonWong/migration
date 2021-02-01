@@ -148,7 +148,7 @@ public class MigrateMongoSong2KtvService extends MigrateBase {
                     material.setCode(item.getCode());
                     material.setMaterialName(item.getMaterialName());
                     material.setType(item.getType());
-                    material.setVideo(item.getType() == 2 ? materialVideoDTOS : null);
+                    material.setVideo(item.getType() == 2 ? materialVideoDTOS.get(0) : null);
                     material.setImgFilePath(item.getType() != 2 ? item.getImgFilePath() : null);
                     material.setSongType(item.getSongType());
                     material.setMusicianCode(item.getMusicianCode());
