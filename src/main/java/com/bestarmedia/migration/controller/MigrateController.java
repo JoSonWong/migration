@@ -113,4 +113,11 @@ public class MigrateController {
         map.put("tip", migrateMongoSong2KtvService.migrateVersion2Ktv(typeFormats, from));
         return JsonResponseHandler.success(map);
     }
+
+    @GetMapping("/v7.0/migration/mongo-song-to-ktv-musician")
+    public JsonResponse musicianToSong2Ktv() {
+        HashMap<String, String> map = new HashMap<>();
+        map.put("tip", migrateMongoSong2KtvService.migrateMusician());
+        return JsonResponseHandler.success(map);
+    }
 }

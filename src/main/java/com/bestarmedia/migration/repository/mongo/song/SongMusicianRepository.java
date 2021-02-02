@@ -107,6 +107,7 @@ public class SongMusicianRepository {
     public long countWarehousing() {
         Query query = new Query();
         Criteria criteria = new Criteria();
+        query.addCriteria(Criteria.where("mold").is(1));
         query.addCriteria(criteria).with(Sort.by(Sort.Direction.DESC, "hot_sum"));
         return songMongoTemplate.count(query, SongMusicianSimple.class);
 //        return songMongoTemplate.findAll(SongInformation.class);
