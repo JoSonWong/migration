@@ -107,7 +107,7 @@ public class MigrateMySQL2MongoSongService extends MigrateBase {
                 songArea.setCode(item.getId());
                 songArea.setName(item.getName());
                 songArea.setParentCode(0);
-                songArea.setIsShow(item.getIsShow());
+                songArea.setIsShow(item.getDeletedAt() == null ? (item.getIsShow() + 1) : 0);
                 songArea.setSort(item.getSort());
                 songArea.setCreateUser(item.getCreateUser());
                 songArea.setUpdateUser(item.getUpdateUser());
@@ -133,7 +133,7 @@ public class MigrateMySQL2MongoSongService extends MigrateBase {
                 language.setCode(item.getId());
                 language.setName(item.getLanguageName());
                 language.setParentCode(0);
-                language.setIsShow(item.getIsShow());
+                language.setIsShow(item.getDeletedAt() == null ? (item.getIsShow() + 1) : 0);
                 language.setSort(item.getSort());
                 language.setCreateUser(item.getCreateUser());
                 language.setUpdateUser(item.getUpdateUser());
@@ -159,7 +159,7 @@ public class MigrateMySQL2MongoSongService extends MigrateBase {
                 songType.setCode(item.getId());
                 songType.setName(item.getName());
                 songType.setParentCode(item.getParentId());
-                songType.setIsShow(item.getIsShow());
+                songType.setIsShow(item.getDeletedAt() == null ? (item.getIsShow() + 1) : 0);
                 songType.setSort(item.getSort());
                 songType.setCreateUser(item.getCreateUser());
                 songType.setUpdateUser(item.getUpdateUser());

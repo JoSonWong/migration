@@ -26,24 +26,24 @@ public class Migrate2MongoSongAndHandlerDataService {
     }
 
     public String migrate() {
-        long total = System.currentTimeMillis();
         long current = System.currentTimeMillis();
-
         migrateMySQL2MongoSongService.migrate();
-        System.out.println("MySQL 迁移数据到 Mongo.Song 耗时：" + (System.currentTimeMillis() - current) / 1000);
-        current = System.currentTimeMillis();
-        mongoSongMusicianScannerService.scanMusician();
-        System.out.println("扫描 Mongo.Song 中歌曲、版本的音乐人耗时：" + (System.currentTimeMillis() - current) / 1000);
-
-        current = System.currentTimeMillis();
-        mongoSongMusicianCleanerService.cleanMusician();
-        System.out.println("清理 Mongo.Song 中无关联音乐人耗时：" + (System.currentTimeMillis() - current) / 1000);
-
-
-        String tip = "从 MySQL 迁移数据到 Mongo.Song 并清理数据总耗时:" + (System.currentTimeMillis() - total) / 1000;
+        String tip = ("MySQL 迁移数据到 Mongo.Song 耗时：" + (System.currentTimeMillis() - current) / 1000);
         System.out.println(tip);
 
         return tip;
     }
+
+    public String cleanMusician() {
+        long current = System.currentTimeMillis();
+        mongoSongMusicianScannerService.scanMusician();
+        System.out.println("扫描 Mongo.Song 中歌曲、版本的音乐人耗时：" + (System.currentTimeMillis() - current) / 1000);
+        current = System.currentTimeMillis();
+        mongoSongMusicianCleanerService.cleanMusician();
+        String tip = ("清理 Mongo.Song 中无关联音乐人耗时：" + (System.currentTimeMillis() - current) / 1000);
+        System.out.println(tip);
+        return tip;
+    }
+
 
 }

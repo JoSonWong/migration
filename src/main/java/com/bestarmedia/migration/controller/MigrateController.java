@@ -45,9 +45,9 @@ public class MigrateController {
     @GetMapping("/v7.0/migration/mysql-to-mongo-song")
     public JsonResponse toMongoSong() {
         HashMap<String, String> map = new HashMap<>();
-        String tip2Song = migrate2MongoSongAndHandlerDataService.migrate();
-        map.put("tip", tip2Song);
+        map.put("mysql_to_song", migrate2MongoSongAndHandlerDataService.migrate());
         map.put("tip_mp3", migrateMySQL2MongoSongService.fillMP3(0, 0));
+        map.put("clean_musician", migrate2MongoSongAndHandlerDataService.cleanMusician());
         return JsonResponseHandler.success(map);
     }
 
