@@ -31,9 +31,13 @@ public class SongSongVersionRepository {
     public SongSongVersion insert(SongSongVersion vodSongVersion) {
         if (findByCode(vodSongVersion.getCode()) != null) {
             int code = findMaxCode() + 1;
-            vodSongVersion.setCode(code);
+            if (code < 1000000) {//新版本从100W开始，避免版本重复
+                code = 1000000;
+            }
+            final int newVersionCode = code;
+            vodSongVersion.setCode(newVersionCode);
             vodSongVersion.getVideoFileList().forEach(item ->
-                    item.setCode(code));
+                    item.setCode(newVersionCode));
         }
         return songMongoTemplate.insert(vodSongVersion);
     }

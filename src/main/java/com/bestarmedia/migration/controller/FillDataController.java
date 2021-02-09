@@ -82,4 +82,13 @@ public class FillDataController {
         map.put("tip", fillDataService.fillReleaseTimeAndTag(from, to));
         return JsonResponseHandler.success(map);
     }
+
+
+    @GetMapping("/v7.0/migration/fill-data/yjx-all")
+    public JsonResponse fillDataYJXAll(@RequestParam(value = "from", defaultValue = "0") Integer from,
+                                       @RequestParam(value = "to", defaultValue = "0") Integer to) {
+        HashMap<String, String> map = new HashMap<>();
+        map.put("tip", fillDataService.fillYjxAll(from, to));
+        return JsonResponseHandler.success(map);
+    }
 }

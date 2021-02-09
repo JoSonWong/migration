@@ -120,6 +120,7 @@ public class CommonUtil {
     public static String deleteSpecialChar(String text) {
         return text.trim().replace("\"", "").replace("“", "").replace("”", "")
                 .replace("(", "").replace(")", "").replace("（", "").replace("）", "")
-                .replace("/", "|").replace("｜", "|").replace("，", "|").replace("&", "|").replace("、", "|");
+                .replace("/", "|").replace("｜", "|").replace("，", "|")
+                .replace("&", "|").replace("、", "|").replace("；", "|").replace("| ", "|");
     }
 }

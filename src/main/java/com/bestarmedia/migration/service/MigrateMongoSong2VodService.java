@@ -388,7 +388,7 @@ public class MigrateMongoSong2VodService extends MigrateBase {
                     version.setSongCodeOld(item.getSongCodeOld());
                     version.setSinger(item.getSinger());
                     version.setType(item.getType());
-                    version.setVersionsTypeCode(item.getVersionsType());
+                    version.setVersionsType(item.getVersionsType());
                     version.setSource(item.getSource());
                     version.setAlbum(item.getAlbum());
                     version.setIncreaseHot(item.getIncreaseHot());

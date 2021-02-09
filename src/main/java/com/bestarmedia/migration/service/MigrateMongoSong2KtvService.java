@@ -31,6 +31,7 @@ public class MigrateMongoSong2KtvService extends MigrateBase {
     private final SongAlbumRepository songAlbumRepository;
     private final SongTagRepository songTagRepository;
     private final SongMaterialRepository songMaterialRepository;
+    private final SongUgcRepository songUgcRepository;
 
     private final KtvSingerRepository ktvSingerRepository;
     private final KtvSongVersionRepository ktvSongVersionRepository;
@@ -42,6 +43,7 @@ public class MigrateMongoSong2KtvService extends MigrateBase {
     private final KtvSongAlbumRepository ktvSongAlbumRepository;
     private final KtvTagRepository ktvTagRepository;
     private final KtvMaterialRepository ktvMaterialRepository;
+    private final KtvUgcRepository ktvUgcRepository;
 
     private int musicianCount = 0;
     private Map<Integer, Boolean> types = new HashMap<>();
@@ -58,6 +60,7 @@ public class MigrateMongoSong2KtvService extends MigrateBase {
                                        SongAlbumRepository songAlbumRepository,
                                        SongTagRepository songTagRepository,
                                        SongMaterialRepository songMaterialRepository,
+                                       SongUgcRepository songUgcRepository,
 
                                        KtvSingerRepository ktvSingerRepository,
                                        KtvSongVersionRepository ktvSongVersionRepository,
@@ -68,7 +71,8 @@ public class MigrateMongoSong2KtvService extends MigrateBase {
                                        KtvSongVersionTypeRepository ktvSongVersionTypeRepository,
                                        KtvSongAlbumRepository ktvSongAlbumRepository,
                                        KtvTagRepository ktvTagRepository,
-                                       KtvMaterialRepository ktvMaterialRepository) {
+                                       KtvMaterialRepository ktvMaterialRepository,
+                                       KtvUgcRepository ktvUgcRepository) {
         this.songAreaRepository = songAreaRepository;
         this.songInformationRepository = songInformationRepository;
         this.songLanguageRepository = songLanguageRepository;
@@ -79,6 +83,7 @@ public class MigrateMongoSong2KtvService extends MigrateBase {
         this.songAlbumRepository = songAlbumRepository;
         this.songTagRepository = songTagRepository;
         this.songMaterialRepository = songMaterialRepository;
+        this.songUgcRepository = songUgcRepository;
 
         this.ktvSingerRepository = ktvSingerRepository;
         this.ktvSongVersionRepository = ktvSongVersionRepository;
@@ -90,7 +95,7 @@ public class MigrateMongoSong2KtvService extends MigrateBase {
         this.ktvSongAlbumRepository = ktvSongAlbumRepository;
         this.ktvTagRepository = ktvTagRepository;
         this.ktvMaterialRepository = ktvMaterialRepository;
-
+        this.ktvUgcRepository = ktvUgcRepository;
     }
 
     public void setFormat(String typeFormat) {
@@ -116,12 +121,46 @@ public class MigrateMongoSong2KtvService extends MigrateBase {
 
         migrateMusician();
 
+        mergeUgc();
+
         if (types.size() > 0 && formats.size() > 0) {
             migrateVersion2Ktv(typeFormat);
         }
         String tip = "Mongo.Song 迁移数据到 Mongo.Ktv 总耗时：" + (System.currentTimeMillis() - currentTimeMillis) / 1000 + "秒";
         System.out.println(tip);
         return tip;
+    }
+
+    public void mergeUgc() {
+        List<SongUgc> songUgcs = songUgcRepository.findAll();
+        System.out.println("清除 UGC 信息数量:" + songUgcRepository.cleanAllData());
+        songUgcs.forEach(item -> {
+            try {
+                KtvUgc ugc = new KtvUgc();
+                ugc.setCode(item.getCode());
+                ugc.setSongName(item.getSongName());
+                ugc.setSongInitial(item.getSongInitial());
+                ugc.setWordCount(item.getWordCount());
+                ugc.setSongType(item.getSongType());
+                ugc.setSinger(item.getSinger());
+                ugc.setLanguage(item.getLanguage());
+                ugc.setStatus(item.getStatus());
+                ugc.setUgcOwner(item.getUgcOwner());
+                ugc.setFilePath(item.getFilePath());
+                ugc.setResolutionWidth(item.getResolutionWidth());
+                ugc.setResolutionHeight(item.getResolutionHeight());
+                ugc.setAudioTrack(item.getAudioTrack());
+                ugc.setVolume(item.getVolume());
+                ugc.setRemark(item.getRemark());
+                ugc.setCreatedAt(item.getCreatedAt());
+                ugc.setUpdatedAt(item.getUpdatedAt());
+                ugc.setDeletedAt(item.getDeletedAt());
+                KtvUgc save = ktvUgcRepository.insert(ugc);
+                System.out.println("保存 UGC 信息:" + CommonUtil.OBJECT_MAPPER.writeValueAsString(save));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
     }
 
     public String mergeMaterial(String typeFormat) {
@@ -178,7 +217,7 @@ public class MigrateMongoSong2KtvService extends MigrateBase {
             try {
                 KtvTag tag = new KtvTag();
                 tag.setCode(item.getCode());
-                tag.setTagName(item.getTagName());
+                tag.setName(item.getTagName());
                 tag.setParentCode(item.getParentCode());
                 tag.setRemark(item.getRemark());
                 tag.setSort(item.getSort());
@@ -432,7 +471,7 @@ public class MigrateMongoSong2KtvService extends MigrateBase {
                             version.setSongCodeOld(v.getSongCodeOld());
                             version.setSinger(v.getSinger());
                             version.setType(v.getType());
-                            version.setVersionsTypeCode(v.getVersionsType());
+                            version.setVersionsType(v.getVersionsType());
                             version.setSource(v.getSource());
                             version.setAlbum(v.getAlbum());
                             version.setIncreaseHot(v.getIncreaseHot());
@@ -441,13 +480,12 @@ public class MigrateMongoSong2KtvService extends MigrateBase {
                             version.setRecommend(v.getRecommend());
                             version.setStatus(v.getStatus());
                             version.setFile(files.get(0));
-                            version.setKtvNetCode(v.getKtvNetCode());
                             version.setCreatedAt(item.getCreatedAt());
                             version.setUpdatedAt(item.getUpdatedAt());
                             KtvSongVersion save = ktvSongVersionRepository.insert(version);
 
-                            versionSimples.add(new KtvVersionSimple(save.getCode(), save.getType(), save.getVersionsTypeCode(), save.getVersionHotSum(),
-                                    save.getRecommend(), save.getStatus(), save.getKtvNetCode(), fileSimples.get(0)));
+                            versionSimples.add(new KtvVersionSimple(save.getCode(), save.getType(), save.getVersionsType(), save.getVersionHotSum(),
+                                    save.getRecommend(), save.getStatus(), fileSimples.get(0)));
 
                             addVersionCount.getAndIncrement();
                         }

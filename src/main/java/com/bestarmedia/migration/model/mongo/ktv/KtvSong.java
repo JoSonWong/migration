@@ -3,6 +3,7 @@ package com.bestarmedia.migration.model.mongo.ktv;
 
 import com.bestarmedia.migration.model.mongo.Auditing;
 import com.bestarmedia.migration.model.mongo.CodeName;
+import com.bestarmedia.migration.model.mongo.CodeNameParent;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -34,7 +35,7 @@ public class KtvSong extends Auditing {
     private int wordCount;//字数
 
     @Field(value = "song_type")
-    private CodeName songType;//分类
+    private CodeNameParent songType;//分类
 
     @Field(value = "singer")
     private List<CodeName> singer;//歌手
@@ -49,7 +50,7 @@ public class KtvSong extends Auditing {
     private CodeName language;//语种
 
     @Field(value = "tag")
-    private List<CodeName> tag;//标签
+    private List<CodeNameParent> tag;//标签
 
     @Field(value = "hot")
     private long hot;//真实热度

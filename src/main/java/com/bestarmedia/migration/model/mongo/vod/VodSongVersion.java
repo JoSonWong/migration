@@ -36,7 +36,7 @@ public class VodSongVersion extends Auditing {
     private int type;//类型  1为视频，2为音画
 
     @Field(value = "versions_type")
-    private int versionsTypeCode;//关联版本表（视频-MV，视频-重制，音画-MV ...）
+    private int versionsType;//关联版本表（视频-MV，视频-重制，音画-MV ...）
 
     @Field(value = "source")
     private String source;//来源
@@ -64,8 +64,5 @@ public class VodSongVersion extends Auditing {
 
     @Field(value = "file")
     private List<VideoFile> file;//文件
-
-    @Field(value = "ktv_net_code")
-    private List<String> ktvNetCode;//定向KTV编号
 
 }

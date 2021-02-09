@@ -3,7 +3,6 @@ package com.bestarmedia.migration.repository.mongo.song;
 
 import com.bestarmedia.migration.model.mongo.song.SongInformation;
 import com.bestarmedia.migration.model.mongo.song.SongInformationSimple;
-import com.bestarmedia.migration.model.mongo.vod.VodSong;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,10 +44,26 @@ public class SongInformationRepository {
         return songMongoTemplate.findOne(new Query(Criteria.where("song_name").is(songName).and("singer.name").in(singers)), SongInformation.class);
     }
 
+
+    public int findMaxCode() {
+        Query query = new Query();
+        query.with(Sort.by(Sort.Direction.DESC, "code")).limit(1);
+        SongInformation songSongVersion = songMongoTemplate.findOne(query, SongInformation.class);
+        return songSongVersion == null ? 0 : songSongVersion.getCode();
+    }
+
     public SongInformation insert(SongInformation song) {
-        SongInformation songInformation = findByCode(song.getCode());
-        if (songInformation != null) {
-            return songInformation;
+        if (song.getCode() > 0) {
+            SongInformation songInformation = findByCode(song.getCode());
+            if (songInformation != null) {
+                return songInformation;
+            }
+        } else {
+            int code = findMaxCode() + 1;
+            if (code < 1000000) {//新歌曲从100W开始，避免重复
+                code = 1000000;
+            }
+            song.setCode(code);
         }
         return songMongoTemplate.insert(song);
     }

@@ -115,4 +115,7 @@ public interface MysqlSongRepository extends JpaRepository<Song, Integer>, JpaSp
     @Transactional
     @Query(value = "update vod_song set local_lyric_file_path=:local_lyric_file_path ,lyric_file_md5=:lyric_file_md5  where s_id=:id", nativeQuery = true)
     int updateReleaseTimeAndTag(@Param(value = "local_lyric_file_path") String local_lyric_file_path, @Param(value = "lyric_file_md5") String lyric_file_md5, @Param(value = "id") int id);
+
+    @Query(value = "select * from vod_song as s where s.ktv_net_code <> ''   and  s.status=1 and s.deleted_at is NULL ORDER BY s.song_name ASC, s.singer ASC,s.video_type ASC ", nativeQuery = true)
+    List<Song> getUgc();
 }

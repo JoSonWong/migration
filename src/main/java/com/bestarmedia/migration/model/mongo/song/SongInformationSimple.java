@@ -2,6 +2,7 @@ package com.bestarmedia.migration.model.mongo.song;
 
 
 import com.bestarmedia.migration.model.mongo.CodeName;
+import com.bestarmedia.migration.model.mongo.CodeNameParent;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -27,7 +28,7 @@ public class SongInformationSimple {
     private int code;//歌曲唯一标识
 
     @Field(value = "song_type")
-    private SongType songType;//分类
+    private CodeNameParent songType;//分类
 
     @Field(value = "singer")
     private List<CodeName> singer;//歌手

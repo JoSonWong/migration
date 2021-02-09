@@ -3,24 +3,25 @@ package com.bestarmedia.migration.service;
 
 import com.bestarmedia.migration.misc.CommonUtil;
 import com.bestarmedia.migration.misc.DateUtil;
-import com.bestarmedia.migration.model.mongo.CodeName;
-import com.bestarmedia.migration.model.mongo.SearchKeyword;
-import com.bestarmedia.migration.model.mongo.VideoFile;
+import com.bestarmedia.migration.model.mongo.*;
 import com.bestarmedia.migration.model.mongo.song.*;
-import com.bestarmedia.migration.model.mysql.Language;
-import com.bestarmedia.migration.model.mysql.Musician;
-import com.bestarmedia.migration.model.mysql.Part;
-import com.bestarmedia.migration.model.mysql.Song;
+import com.bestarmedia.migration.model.mysql.*;
 import com.bestarmedia.migration.repository.mongo.song.*;
 import com.bestarmedia.migration.repository.mysql.*;
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.extern.slf4j.Slf4j;
+import net.sourceforge.pinyin4j.PinyinHelper;
+import net.sourceforge.pinyin4j.format.HanyuPinyinCaseType;
+import net.sourceforge.pinyin4j.format.HanyuPinyinOutputFormat;
+import net.sourceforge.pinyin4j.format.HanyuPinyinToneType;
+import net.sourceforge.pinyin4j.format.exception.BadHanyuPinyinOutputFormatCombination;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
@@ -41,7 +42,7 @@ public class MigrateMySQL2MongoSongService extends MigrateBase {
     private final SongAreaRepository songAreaRepository;
     private final SongAlbumRepository songAlbumRepository;
     private final SongTagRepository songTagRepository;
-
+    private final SongUgcRepository songUgcRepository;
 
     private int versionCount = 0;
     private int songCount = 0;
@@ -64,7 +65,8 @@ public class MigrateMySQL2MongoSongService extends MigrateBase {
                                          SongSongTypeRepository songSongTypeRepository,
                                          SongAreaRepository songAreaRepository,
                                          SongAlbumRepository songAlbumRepository,
-                                         SongTagRepository songTagRepository) {
+                                         SongTagRepository songTagRepository,
+                                         SongUgcRepository songUgcRepository) {
         this.mysqlMusicianRepository = mysqlMusicianRepository;
         this.mysqlPartRepository = mysqlPartRepository;
         this.mysqlSongRepository = mysqlSongRepository;
@@ -79,6 +81,7 @@ public class MigrateMySQL2MongoSongService extends MigrateBase {
         this.songAreaRepository = songAreaRepository;
         this.songAlbumRepository = songAlbumRepository;
         this.songTagRepository = songTagRepository;
+        this.songUgcRepository = songUgcRepository;
     }
 
 
@@ -355,6 +358,7 @@ public class MigrateMySQL2MongoSongService extends MigrateBase {
         System.out.println("清除歌曲信息数量:" + songInformationRepository.cleanAllData());
         System.out.println("清除专辑信息数量:" + songAlbumRepository.cleanAllData());
         System.out.println("清除标签信息数量:" + songTagRepository.cleanAllData());
+        System.out.println("清除UGC信息数量:" + songUgcRepository.cleanAllData());
         versionCount = 0;
         songCount = 0;
         long cur = System.currentTimeMillis();
@@ -370,6 +374,49 @@ public class MigrateMySQL2MongoSongService extends MigrateBase {
         return text;
     }
 
+    private void insertToUgc(Song song) {
+        SongUgc songUgc = new SongUgc();
+        songUgc.setSongInitial(song.getSongInitial());
+        songUgc.setSongName(song.getSongName());
+        songUgc.setWordCount(song.getWordCount());
+        songUgc.setSongType(createSongType(song));
+        songUgc.setAudioTrack(song.getAudioTrack());
+        if (!(StringUtils.isEmpty(song.getSinger()) || "[]".equals(song.getSinger()) || "[\"\"]".equals(song.getSinger()) || "[\" \"]".equals(song.getSinger()))) {
+            songUgc.setSinger(getIdNames(song.getSingerMid(), song.getSinger()));
+        }
+        songUgc.setLanguage(new CodeName(song.getLanguage().getId(), song.getLanguage().getLanguageName()));
+        songUgc.setStatus(song.getStatus());
+        songUgc.setUgcOwner(new KtvUgcOwner(song.getCreateUser() + "", "", "", song.getKtvNetCode(), ""));
+        songUgc.setFilePath(song.getMediaFilePath());
+        songUgc.setResolutionWidth(song.getResolutionWidth());
+        songUgc.setResolutionHeight(song.getResolutionHeight());
+        songUgc.setAudioTrack(song.getAudioTrack());
+        songUgc.setVolume(song.getVolume());
+        songUgc.setCreateUser(song.getCreateUser());
+        songUgc.setUpdateUser(song.getUpdateUser());
+        songUgc.setCreatedAt(song.getCreatedAt());
+        songUgc.setUpdatedAt(song.getUpdatedAt());
+        songUgc.setDeletedAt(song.getDeletedAt());
+
+        songUgcRepository.insert(songUgc);
+
+    }
+
+    public void migrateUgc() {
+        long delCount = songUgcRepository.cleanAllData();
+        System.out.println("清除音乐人信息数量量:" + delCount);
+        migrateUgc2CmsV7();
+    }
+
+    private void migrateUgc2CmsV7() {
+        List<Song> list = mysqlSongRepository.getUgc();
+        list.forEach(item -> {
+            if (!StringUtils.isEmpty(item.getKtvNetCode())) {//KTV定向歌曲
+                insertToUgc(item);
+            }
+        });
+    }
+
     private void migrateSong2CmsV7(int index, int pageSize) {
         try {
             long cur = System.currentTimeMillis();
@@ -379,90 +426,79 @@ public class MigrateMySQL2MongoSongService extends MigrateBase {
             list.forEach(item -> {
                 try {
                     String songName = CommonUtil.deleteParenthesesEnd(CommonUtil.deleteSpaceAndUpperFirst(item.getSongName()));
-                    String key = (songName + ";" + item.getSongId()).toUpperCase();
-                    if (!(StringUtils.isEmpty(item.getSinger()) || "[]".equals(item.getSinger()) || "[\"\"]".equals(item.getSinger()) || "[\" \"]".equals(item.getSinger()))) {
-                        List<String> singerNames = CommonUtil.OBJECT_MAPPER.readValue(item.getSinger(), new TypeReference<List<String>>() {
-                        });
-                        singerNames.sort(Comparator.naturalOrder());
-                        key = (songName + ";" + CommonUtil.OBJECT_MAPPER.writeValueAsString(singerNames)).toUpperCase();
-                    }
-                    if (map.containsKey(key)) {
-                        SongInformation vodSong = map.get(key);
-                        createSongVersion(vodSong.getCode(), vodSong.getSongName(), item, 1, "", "", "");
-                        vodSong.setHot(0L);
-                        vodSong.setHotSum(vodSong.getHotSum() + item.getHot());
+                    if (!StringUtils.isEmpty(item.getKtvNetCode())) {//KTV定向歌曲
+                        insertToUgc(item);
+                    } else {
+                        String key = (songName + ";" + item.getSongId()).toUpperCase();
+                        if (!(StringUtils.isEmpty(item.getSinger()) || "[]".equals(item.getSinger()) || "[\"\"]".equals(item.getSinger()) || "[\" \"]".equals(item.getSinger()))) {
+                            List<String> singerNames = CommonUtil.OBJECT_MAPPER.readValue(item.getSinger(), new TypeReference<List<String>>() {
+                            });
+                            singerNames.sort(Comparator.naturalOrder());
+                            key = (songName + ";" + CommonUtil.OBJECT_MAPPER.writeValueAsString(singerNames)).toUpperCase();
+                        }
+                        if (map.containsKey(key)) {
+                            SongInformation vodSong = map.get(key);
+                            createSongVersion(vodSong.getCode(), vodSong.getSongName(), item, 1, "", "", "");
+                            vodSong.setHot(0L);
+                            vodSong.setHotSum(vodSong.getHotSum() + item.getHot());
 
-                        if ((vodSong.getLyricist() == null || vodSong.getLyricist().isEmpty()) && (!StringUtils.isEmpty(item.getLyricistMid()) || !StringUtils.isEmpty(item.getLyricist()))) {//词作者
-                            vodSong.setLyricist(getIdNames(item.getLyricistMid(), item.getLyricist()));
-                            System.out.println("补充词作者：" + item.getId() + "  " + item.getLyricistMid() + " " + item.getLyricist());
-                        }
-                        if ((vodSong.getComposer() == null || vodSong.getComposer().isEmpty()) && (!StringUtils.isEmpty(item.getComposerMid()) || !StringUtils.isEmpty(item.getComposer()))) {//曲作者
-                            vodSong.setComposer(getIdNames(item.getComposerMid(), item.getComposer()));
-                            System.out.println("补充曲作者：" + item.getId() + "  " + item.getComposerMid() + "  " + item.getComposer());
-                        }
-                        if (StringUtils.isEmpty(vodSong.getSongInitial()) && !StringUtils.isEmpty(item.getSongInitial())) {
-                            vodSong.setSongInitial(item.getSongInitial());
-                            System.out.println("补充简拼：" + item.getId() + "  " + item.getSongInitial());
-                        }
-                        if (vodSong.getWordCount() == 0 && item.getWordCount() > 0) {
-                            vodSong.setWordCount(item.getWordCount());
-                            System.out.println("补充字数：" + item.getId() + "  " + item.getWordCount());
-                        }
-                        if ((vodSong.getSongType() == null || vodSong.getSongType().getCode() == 0) && (item.getSongType() != null)) {
-                            SongType songType = new SongType(item.getSongType().getId(), item.getSongType().getName(), item.getSongType().getId(), item.getSongType().getName());
-                            Optional<com.bestarmedia.migration.model.mysql.SongType> optional;
-                            if (item.getSongType().getParentId() > 0 && (optional = this.mysqlSongTypeRepository.findById(item.getSongType().getParentId())).isPresent()) {
-                                songType.setParentCode(optional.get().getId());
-                                songType.setParentName(optional.get().getName());
+                            if ((vodSong.getLyricist() == null || vodSong.getLyricist().isEmpty()) && (!StringUtils.isEmpty(item.getLyricistMid()) || !StringUtils.isEmpty(item.getLyricist()))) {//词作者
+                                vodSong.setLyricist(getIdNames(item.getLyricistMid(), item.getLyricist()));
+                                System.out.println("补充词作者：" + item.getId() + "  " + item.getLyricistMid() + " " + item.getLyricist());
                             }
-                            vodSong.setSongType(songType);
-                            System.out.println("补充歌曲类型：" + item.getId() + "  " + item.getSongType().getName());
-                        }
-                        if ((vodSong.getLanguage() == null || vodSong.getLanguage().getCode() == 0) && (item.getLanguage() != null)) {
-                            vodSong.setLanguage(new CodeName(item.getLanguage().getId(), item.getLanguage().getLanguageName()));
-                            System.out.println("补充语种：" + item.getId() + "  " + item.getLanguage().getLanguageName());
-                        }
-                        if (vodSong.getRecommend() == 0 && item.getSofthard() > 0) {
-                            vodSong.setRecommend(item.getSofthard());
-                            System.out.println("补充推荐歌曲：" + item.getId() + "  " + item.getSofthard());
-                        }
-                        if (vodSong.getStatus() == 0 && item.getStatus() > 0) {
-                            vodSong.setStatus(item.getStatus());
-                            System.out.println("补充上架状态：" + item.getId() + "  " + item.getStatus());
-                        }
-                        List<CodeName> tagCodeNames = vodSong.getTag();
-                        if (tagCodeNames == null) {
-                            tagCodeNames = new ArrayList<>();
-                        }
-                        if (!StringUtils.isEmpty(item.getLyricFileMd5())) {
-                            String[] tags = item.getLyricFileMd5().split("\\|");
-                            for (String tag : tags) {
-                                if (tagCodeNames.isEmpty() || !isContainName(tagCodeNames, tag)) {
-                                    SongTag songTag = songTagRepository.findByName(tag);
-                                    if (songTag == null) {
-                                        songTag = songTagRepository.insert(tag, songName, item.getSinger());
+                            if ((vodSong.getComposer() == null || vodSong.getComposer().isEmpty()) && (!StringUtils.isEmpty(item.getComposerMid()) || !StringUtils.isEmpty(item.getComposer()))) {//曲作者
+                                vodSong.setComposer(getIdNames(item.getComposerMid(), item.getComposer()));
+                                System.out.println("补充曲作者：" + item.getId() + "  " + item.getComposerMid() + "  " + item.getComposer());
+                            }
+                            if (StringUtils.isEmpty(vodSong.getSongInitial()) && !StringUtils.isEmpty(item.getSongInitial())) {
+                                vodSong.setSongInitial(item.getSongInitial());
+                                System.out.println("补充简拼：" + item.getId() + "  " + item.getSongInitial());
+                            }
+                            if (vodSong.getWordCount() == 0 && item.getWordCount() > 0) {
+                                vodSong.setWordCount(item.getWordCount());
+                                System.out.println("补充字数：" + item.getId() + "  " + item.getWordCount());
+                            }
+                            if ((vodSong.getSongType() == null || vodSong.getSongType().getCode() == 0) && (item.getSongType() != null)) {
+                                vodSong.setSongType(createSongType(item));
+                                System.out.println("补充歌曲类型：" + item.getId() + "  " + item.getSongType().getName());
+                            }
+                            if ((vodSong.getLanguage() == null || vodSong.getLanguage().getCode() == 0) && (item.getLanguage() != null)) {
+                                vodSong.setLanguage(new CodeName(item.getLanguage().getId(), item.getLanguage().getLanguageName()));
+                                System.out.println("补充语种：" + item.getId() + "  " + item.getLanguage().getLanguageName());
+                            }
+                            if (vodSong.getRecommend() == 0 && item.getSofthard() > 0) {
+                                vodSong.setRecommend(item.getSofthard());
+                                System.out.println("补充推荐歌曲：" + item.getId() + "  " + item.getSofthard());
+                            }
+                            if (vodSong.getStatus() == 0 && item.getStatus() > 0) {
+                                vodSong.setStatus(item.getStatus());
+                                System.out.println("补充上架状态：" + item.getId() + "  " + item.getStatus());
+                            }
+                            List<CodeNameParent> tagCodeNames = vodSong.getTag();
+                            if (tagCodeNames == null) {
+                                tagCodeNames = new ArrayList<>();
+                            }
+                            if (!StringUtils.isEmpty(item.getLyricFileMd5())) {
+                                String[] tags = item.getLyricFileMd5().split("\\|");
+                                for (String tag : tags) {
+                                    if (tagCodeNames.isEmpty() || !isContainName(tagCodeNames, tag)) {
+                                        SongTag songTag = songTagRepository.findByName(tag);
+                                        if (songTag == null) {
+                                            songTag = songTagRepository.insert(tag, songName, item.getSinger());
+                                        }
+                                        CodeNameParent codeNameParent = new CodeNameParent(0, "");
+                                        codeNameParent.setCode(songTag.getCode());
+                                        codeNameParent.setName(songTag.getTagName());
+                                        tagCodeNames.add(codeNameParent);
                                     }
-                                    tagCodeNames.add(new CodeName(songTag.getCode(), songTag.getTagName()));
                                 }
                             }
-                        }
-                        vodSong.setTag(tagCodeNames);
-//                        if (StringUtils.isEmpty(vodSong.getNoteOne()) && !StringUtils.isEmpty(item.getNoteOne())) {
-//                            vodSong.setNoteOne(item.getNoteOne());
-//                            System.out.println("补充备注1：" + item.getId() + "  " + item.getNoteOne());
-//                        }
-//                        if (StringUtils.isEmpty(vodSong.getNoteTwo()) && !StringUtils.isEmpty(item.getNoteTwo())) {
-//                            vodSong.setNoteTwo(item.getNoteTwo());
-//                            System.out.println("补充备注2：" + item.getId() + "  " + item.getNoteTwo());
-//                        }
-//                        if (StringUtils.isEmpty(vodSong.getNoteThree()) && !StringUtils.isEmpty(item.getNoteThree())) {
-//                            vodSong.setNoteThree(item.getNoteThree());
-//                            System.out.println("补充备注3：" + item.getId() + "  " + item.getNoteThree());
-//                        }
-                        map.put(key, vodSong);
+                            vodSong.setTag(tagCodeNames);
+                            map.put(key, vodSong);
 
-                    } else {
-                        map.put(key, createSongInformation(item, songName, 1, "", "", ""));
+                        } else {
+                            map.put(key, createSongInformation(item, songName, 1, "", "", ""));
+                        }
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -482,6 +518,20 @@ public class MigrateMySQL2MongoSongService extends MigrateBase {
         }
     }
 
+    private CodeNameParent createSongType(Song item) {
+        CodeNameParent songType = new CodeNameParent();
+        songType.setCode(item.getSongType().getId());
+        songType.setName(item.getSongType().getName());
+        songType.setParentCode(0);
+        songType.setParentName("");
+        Optional<com.bestarmedia.migration.model.mysql.SongType> optional;
+        if (item.getSongType().getParentId() > 0 && (optional = this.mysqlSongTypeRepository.findById(item.getSongType().getParentId())).isPresent()) {
+            songType.setParentCode(optional.get().getId());
+            songType.setParentName(optional.get().getName());
+        }
+        return songType;
+    }
+
     private SongInformation createSongInformation(Song item, String songName, int type, String original, String accompaniment, String lyric) {
         SongInformation vodSong = new SongInformation();
         vodSong.setCode(item.getSongId());
@@ -492,16 +542,11 @@ public class MigrateMySQL2MongoSongService extends MigrateBase {
         vodSong.setComposer(getIdNames(item.getComposerMid(), item.getComposer()));
         vodSong.setWordCount(item.getWordCount());
 
-        SongType songType = new SongType(item.getSongType().getId(), item.getSongType().getName(), item.getSongType().getId(), item.getSongType().getName());
-        Optional<com.bestarmedia.migration.model.mysql.SongType> optional;
-        if (item.getSongType().getParentId() > 0 && (optional = this.mysqlSongTypeRepository.findById(item.getSongType().getParentId())).isPresent()) {
-            songType.setParentCode(optional.get().getId());
-            songType.setParentName(optional.get().getName());
-        }
-        vodSong.setSongType(songType);
+
+        vodSong.setSongType(createSongType(item));
 
         vodSong.setLanguage(new CodeName(item.getLanguage().getId(), item.getLanguage().getLanguageName()));
-        List<CodeName> tagCodeNames = new ArrayList<>();
+        List<CodeNameParent> tagCodeNames = new ArrayList<>();
         if (!StringUtils.isEmpty(item.getLyricFileMd5())) {
             String[] tags = item.getLyricFileMd5().split("\\|");
             for (String tag : tags) {
@@ -509,7 +554,12 @@ public class MigrateMySQL2MongoSongService extends MigrateBase {
                 if (songTag == null) {
                     songTag = songTagRepository.insert(tag, songName, item.getSinger());
                 }
-                tagCodeNames.add(new CodeName(songTag.getCode(), songTag.getTagName()));
+                CodeNameParent codeNameParent = new CodeNameParent();
+                codeNameParent.setCode(songTag.getCode());
+                codeNameParent.setName(songTag.getTagName());
+                codeNameParent.setParentCode(0);
+                codeNameParent.setParentName("");
+                tagCodeNames.add(codeNameParent);
             }
         }
         vodSong.setTag(tagCodeNames);
@@ -530,7 +580,7 @@ public class MigrateMySQL2MongoSongService extends MigrateBase {
         return vodSong;
     }
 
-    private boolean isContainName(List<CodeName> codeNames, String name) {
+    private boolean isContainName(List<CodeNameParent> codeNames, String name) {
         for (CodeName codeName : codeNames) {
             if (codeName.getName().equals(name)) {
                 return true;
@@ -542,7 +592,6 @@ public class MigrateMySQL2MongoSongService extends MigrateBase {
     private SongSongVersion createSongVersion(Integer songId, String songName, Song song, int type, String original, String accompaniment, String lyric) {
         SongSongVersion version = new SongSongVersion();
         version.setCode(song.getSongId());//以旧歌曲版本命名版本id
-//        version.setSongCode(songId);
         version.setSong(new CodeName(songId, songName));
         version.setSongCodeOld(song.getSongId());
         CodeName edition = getEdition(song.getVideoType());
@@ -585,13 +634,11 @@ public class MigrateMySQL2MongoSongService extends MigrateBase {
         List<VideoFile> files = new ArrayList<>();
         files.add(createFileDto(song, original, accompaniment, lyric));
         version.setVideoFileList(files);
-
-        List<String> ktvNetCode = null;
-        if (!StringUtils.isEmpty(song.getKtvNetCode())) {//定向歌曲信息
-            ktvNetCode = new ArrayList<>();
-            ktvNetCode.add(song.getKtvNetCode());
-        }
-        version.setKtvNetCode(ktvNetCode);
+//        List<String> ktvNetCode = null;
+//        if (!StringUtils.isEmpty(song.getKtvNetCode())) {//定向歌曲信息
+//            ktvNetCode = new ArrayList<>();
+//            ktvNetCode.add(song.getKtvNetCode());
+//        }
         SongSongVersion save = songSongVersionRepository.insert(version);
         versionCount++;
         return save;
@@ -646,8 +693,15 @@ public class MigrateMySQL2MongoSongService extends MigrateBase {
                             SongInformation save = songInformationRepository.insert(information);
                             System.out.println("增加音画版本歌曲信息：" + CommonUtil.OBJECT_MAPPER.writeValueAsString(save));
                         } else {
-                            countNotFound.getAndIncrement();
-                            notFound.append("[").append(row).append(":").append(songName).append("]");
+                            information = createSongInformationByMp3Msg(songName, singers, original, accompaniment, lyric);
+                            if (information != null) {
+                                information.setStatus(0);
+                                SongInformation save = songInformationRepository.insert(information);
+                                System.out.println("通歌名、歌星增加音画版本歌曲信息：" + CommonUtil.OBJECT_MAPPER.writeValueAsString(save));
+                            } else {
+                                countNotFound.getAndIncrement();
+                                notFound.append("[").append(row).append(":").append(songName).append("]");
+                            }
                         }
                     }
                 }
@@ -659,6 +713,75 @@ public class MigrateMySQL2MongoSongService extends MigrateBase {
             e.printStackTrace();
         }
         return "";
+    }
+
+    public static String toFirstChar(String chinese) {
+        String pinyinStr = "";
+        char[] newChar = chinese.toCharArray();  //转为单个字符
+        HanyuPinyinOutputFormat defaultFormat = new HanyuPinyinOutputFormat();
+        defaultFormat.setCaseType(HanyuPinyinCaseType.LOWERCASE);
+        defaultFormat.setToneType(HanyuPinyinToneType.WITHOUT_TONE);
+        AtomicBoolean atomicBoolean = new AtomicBoolean(true);
+        for (int i = 0; i < newChar.length; i++) {
+            if (newChar[i] > 128) {//汉字
+                atomicBoolean.set(true);
+                try {
+                    pinyinStr += PinyinHelper.toHanyuPinyinStringArray(newChar[i], defaultFormat)[0].charAt(0);
+                } catch (BadHanyuPinyinOutputFormatCombination e) {
+                    e.printStackTrace();
+                }
+            } else if ('\0' == newChar[i]) {
+                atomicBoolean.set(true);
+            } else {//非汉字
+                if (atomicBoolean.get()) {
+                    pinyinStr += newChar[i];
+                    atomicBoolean.set(false);
+                }
+            }
+        }
+        return pinyinStr;
+    }
+
+    private SongInformation createSongInformationByMp3Msg(String songName, String[] singers, String original, String accompaniment, String lyric) {
+        try {
+            Song song = new Song();
+            song.setId(0);
+            song.setSongId(0);
+            song.setSongName(songName);
+            List<String> singerNames = Arrays.asList(singers);
+            song.setSinger(CommonUtil.OBJECT_MAPPER.writeValueAsString(singerNames));
+            List<Integer> singerId = new ArrayList<>();
+            singerNames.forEach(item -> {
+                Musician musician = mysqlMusicianRepository.findMusicianByMusicianName(item);
+                singerId.add(musician == null ? 0 : musician.getMusicianId());
+            });
+            song.setSingerMid(CommonUtil.OBJECT_MAPPER.writeValueAsString(singerId));
+            String initial = toFirstChar(songName);
+            song.setSongInitial(initial);
+            song.setWordCount(initial.length());
+            SongType songType = new SongType();
+            songType.setId(1);
+            songType.setName("通俗");
+            song.setSongTypeId(1);
+            song.setSongType(songType);
+
+            Language language = new Language();
+            if (CommonUtil.isContainChinese(songName)) {
+                language.setId(1);
+                language.setLanguageName("国语");
+            } else {
+                language.setId(15);
+                language.setLanguageName("其他语言");
+            }
+            song.setLanguageId(language.getId());
+            song.setLanguage(language);
+
+            song.setStatus(0);//
+            return createSongInformation(song, songName, 2, original, accompaniment, lyric);
+        } catch (Exception e) {
+            log.error("创建新歌曲信息出错了：{}", e.getMessage());
+        }
+        return null;
     }
 
     private SongInformation createSongInformationByMySQL(String songName, String[] singers, int type, String o, String a, String l) {
@@ -756,7 +879,7 @@ public class MigrateMySQL2MongoSongService extends MigrateBase {
         file.setOriginalAudioFilePath(original);
         file.setAccompanimentAudioFilePath(accompaniment);
         file.setLyricFilePath(lyric);
-        file.setRemark("");
+        file.setRemark(null);
         return file;
     }
 

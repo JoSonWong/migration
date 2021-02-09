@@ -6,8 +6,6 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Field;
 
-import java.util.List;
-
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -20,7 +18,7 @@ public class KtvVersionSimple {
     private int type;//类型  1为视频，2为音画
 
     @Field(value = "versions_type")
-    private int versionsTypeCode;//关联版本表（视频-MV，视频-重制，音画-MV ...）
+    private int versionsType;//关联版本表（视频-MV，视频-重制，音画-MV ...）
 
     @Indexed
     @Field(value = "versions_hot_sum")
@@ -32,9 +30,6 @@ public class KtvVersionSimple {
 
     @Field(value = "status")
     private int status;//状态
-
-    @Field(value = "ktv_net_code")
-    private List<String> ktvNetCode;//定向KTV编号
 
     @Field(value = "file")
     private KtvVersionFileSimple file;//文件

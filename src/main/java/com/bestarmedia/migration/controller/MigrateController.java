@@ -120,4 +120,20 @@ public class MigrateController {
         map.put("tip", migrateMongoSong2KtvService.migrateMusician());
         return JsonResponseHandler.success(map);
     }
+
+    @GetMapping("/v7.0/migration/mongo-song-to-ugc")
+    public JsonResponse ugcToSong() {
+        HashMap<String, String> map = new HashMap<>();
+        migrateMySQL2MongoSongService.migrateUgc();
+        map.put("tip", "1");
+        return JsonResponseHandler.success(map);
+    }
+
+    @GetMapping("/v7.0/migration/mongo-song-to-ktv-ugc")
+    public JsonResponse ugcToKTV() {
+        HashMap<String, String> map = new HashMap<>();
+        migrateMongoSong2KtvService.mergeUgc();
+        map.put("tip", "1");
+        return JsonResponseHandler.success(map);
+    }
 }

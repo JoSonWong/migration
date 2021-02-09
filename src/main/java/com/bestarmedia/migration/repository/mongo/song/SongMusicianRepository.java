@@ -105,21 +105,17 @@ public class SongMusicianRepository {
 
 
     public long countWarehousing() {
-        Query query = new Query();
-        Criteria criteria = new Criteria();
-        query.addCriteria(Criteria.where("mold").is(1));
-        query.addCriteria(criteria).with(Sort.by(Sort.Direction.DESC, "hot_sum"));
+        Query query = new Query(Criteria.where("mold").is(1));
+        query.with(Sort.by(Sort.Direction.DESC, "hot_sum"));
         return songMongoTemplate.count(query, SongMusicianSimple.class);
 //        return songMongoTemplate.findAll(SongInformation.class);
     }
 
 
     public List<SongMusician> indexWarehousingMusician(Integer currentPage, Integer perPage) {
-        Query query = new Query();
-        Criteria criteria = new Criteria();
-        query.addCriteria(Criteria.where("mold").is(1));
+        Query query = new Query(Criteria.where("mold").is(1));
         Pageable pageable = PageRequest.of(currentPage, perPage);
-        query.addCriteria(criteria).with(Sort.by(Sort.Direction.DESC, "hot_sum"));
+        query.with(Sort.by(Sort.Direction.DESC, "hot_sum"));
         return songMongoTemplate.find(query.with(pageable), SongMusician.class);
     }
 

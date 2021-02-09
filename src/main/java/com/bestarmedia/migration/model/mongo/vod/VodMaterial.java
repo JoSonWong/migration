@@ -1,8 +1,7 @@
 package com.bestarmedia.migration.model.mongo.vod;
 
 import com.bestarmedia.migration.model.mongo.Auditing;
-import com.bestarmedia.migration.model.mongo.CodeName;
-import com.bestarmedia.migration.model.mongo.MaterialTagDTO;
+import com.bestarmedia.migration.model.mongo.CodeNameParent;
 import com.bestarmedia.migration.model.mongo.MaterialVideoDTO;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -45,12 +44,12 @@ public class VodMaterial extends Auditing {
     private List<MaterialVideoDTO> video;
 
     @Field(value = "tag")
-    private List<MaterialTagDTO> tag;
+    private List<CodeNameParent> tag;
 
     @Field(value = "remark")
     private String remark;
 
     @Field(value = "song_type")
-    private List<CodeName> songType;
+    private List<CodeNameParent> songType;
 
 }
