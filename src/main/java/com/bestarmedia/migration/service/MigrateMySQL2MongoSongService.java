@@ -14,7 +14,6 @@ import net.sourceforge.pinyin4j.PinyinHelper;
 import net.sourceforge.pinyin4j.format.HanyuPinyinCaseType;
 import net.sourceforge.pinyin4j.format.HanyuPinyinOutputFormat;
 import net.sourceforge.pinyin4j.format.HanyuPinyinToneType;
-import net.sourceforge.pinyin4j.format.exception.BadHanyuPinyinOutputFormatCombination;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -438,7 +437,8 @@ public class MigrateMySQL2MongoSongService extends MigrateBase {
                         }
                         if (map.containsKey(key)) {
                             SongInformation vodSong = map.get(key);
-                            createSongVersion(vodSong.getCode(), vodSong.getSongName(), item, 1, "", "", "");
+                            createSongVersion(vodSong.getCode(), vodSong.getSongName(), item, item.getMediaFilePath().toLowerCase().endsWith(".mp4") ? 1 : 2,
+                                    item.getMediaFilePath().toLowerCase().endsWith(".mp4") ? "" : item.getMediaFilePath(), "", "");//纯音频歌曲保存为音画版
                             vodSong.setHot(0L);
                             vodSong.setHotSum(vodSong.getHotSum() + item.getHot());
 
@@ -727,7 +727,7 @@ public class MigrateMySQL2MongoSongService extends MigrateBase {
                 atomicBoolean.set(true);
                 try {
                     pinyinStr += PinyinHelper.toHanyuPinyinStringArray(newChar[i], defaultFormat)[0].charAt(0);
-                } catch (BadHanyuPinyinOutputFormatCombination e) {
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
             } else if ('\0' == newChar[i]) {
@@ -748,15 +748,17 @@ public class MigrateMySQL2MongoSongService extends MigrateBase {
             song.setId(0);
             song.setSongId(0);
             song.setSongName(songName);
-            List<String> singerNames = Arrays.asList(singers);
-            song.setSinger(CommonUtil.OBJECT_MAPPER.writeValueAsString(singerNames));
-            List<Integer> singerId = new ArrayList<>();
-            singerNames.forEach(item -> {
-                Musician musician = mysqlMusicianRepository.findMusicianByMusicianName(item);
-                singerId.add(musician == null ? 0 : musician.getMusicianId());
-            });
-            song.setSingerMid(CommonUtil.OBJECT_MAPPER.writeValueAsString(singerId));
-            String initial = toFirstChar(songName);
+            if (singers != null) {
+                List<String> singerNames = Arrays.asList(singers);
+                song.setSinger(CommonUtil.OBJECT_MAPPER.writeValueAsString(singerNames));
+                List<Integer> singerId = new ArrayList<>();
+                singerNames.forEach(item -> {
+                    Musician musician = mysqlMusicianRepository.findFirstByMusicianName(item);
+                    singerId.add(musician == null ? 0 : musician.getMusicianId());
+                });
+                song.setSingerMid(CommonUtil.OBJECT_MAPPER.writeValueAsString(singerId));
+            }
+            String initial = toFirstChar(songName).toUpperCase();
             song.setSongInitial(initial);
             song.setWordCount(initial.length());
             SongType songType = new SongType();
@@ -779,7 +781,7 @@ public class MigrateMySQL2MongoSongService extends MigrateBase {
             song.setStatus(0);//
             return createSongInformation(song, songName, 2, original, accompaniment, lyric);
         } catch (Exception e) {
-            log.error("创建新歌曲信息出错了：{}", e.getMessage());
+            e.printStackTrace();
         }
         return null;
     }
@@ -795,6 +797,7 @@ public class MigrateMySQL2MongoSongService extends MigrateBase {
                         return createSongInformation(item, songName, type, o, a, l);
                     }
                 } catch (Exception e) {
+                    e.printStackTrace();
                 }
             }
         }
@@ -817,7 +820,7 @@ public class MigrateMySQL2MongoSongService extends MigrateBase {
 
     private SongSongVersion createMP3SongVersion(SongSongVersion version, String original, String accompaniment, String lyric) {
         version.set_id(null);
-        int versionCode = songSongVersionRepository.findMaxCode() + 1;
+        int versionCode = songSongVersionRepository.createCode();
         version.setCode(versionCode);
         version.setSongCodeOld(0);
         version.setType(2);

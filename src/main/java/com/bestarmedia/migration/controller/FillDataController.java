@@ -42,6 +42,14 @@ public class FillDataController {
         return JsonResponseHandler.success(map);
     }
 
+    @GetMapping("/v7.0/migration/fill-data/bns-202102")
+    public JsonResponse fillDataBNS2021(@RequestParam(value = "from", defaultValue = "0") Integer from,
+                                        @RequestParam(value = "to", defaultValue = "0") Integer to) {
+        HashMap<String, String> map = new HashMap<>();
+        map.put("tip_bns202102", fillDataService.fillBNS202102(from, to));
+        return JsonResponseHandler.success(map);
+    }
+
     @GetMapping("/v7.0/migration/fill-data/yjx")
     public JsonResponse fillDataYJX(@RequestParam(value = "from", defaultValue = "0") Integer from,
                                     @RequestParam(value = "to", defaultValue = "0") Integer to) {

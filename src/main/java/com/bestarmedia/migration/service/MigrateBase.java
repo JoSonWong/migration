@@ -64,7 +64,7 @@ public class MigrateBase {
     VideoFile createFileDto(Song song, String original, String accompaniment, String lyric) {
         VideoFile file = new VideoFile();
         file.setCode(song.getSongId());
-        if (StringUtils.isEmpty(original)) {//视频版本
+        if (!StringUtils.isEmpty(song.getMediaFilePath()) && song.getMediaFilePath().toLowerCase().endsWith(".mp4")) {//视频版本，旧版的音频歌曲放到音画版
             file.setFileName(song.getMediaFilePath().substring(song.getMediaFilePath().lastIndexOf("/") + 1));
             file.setFilePath("https://song-enterprise.oss-cn-shenzhen.aliyuncs.com/song/h264/" + file.getFileName());
             file.setLyricFilePath("");
@@ -79,7 +79,8 @@ public class MigrateBase {
             }
             file.setVolume(song.getVolume());
         } else {
-            file.setOriginalAudioFilePath(original);
+            file.setOriginalAudioFilePath(StringUtils.isEmpty(original) ? ("https://song-enterprise.oss-cn-shenzhen.aliyuncs.com/song/h264/" + song.getMediaFilePath().substring(song.getMediaFilePath().lastIndexOf("/") + 1))//旧版的纯音频歌曲
+                    : original);
             file.setAccompanimentAudioFilePath(accompaniment);
             file.setLyricFilePath(lyric);
             file.setResolutionWidth(1920);
@@ -89,7 +90,7 @@ public class MigrateBase {
             file.setVolume(80);
         }
         file.setFormatName("H264");
-        file.setVideoType(song.getVideoTypeDetail().getName());
+        file.setVideoType(song.getVideoTypeDetail() == null ? "" : song.getVideoTypeDetail().getName());
         file.setAudioTrack(song.getAudioTrack());
         file.setHot(0L);
         file.setRecommend(song.getSofthard());

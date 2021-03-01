@@ -25,8 +25,6 @@ public interface MysqlMusicianRepository extends JpaRepository<Musician, Integer
 
     Musician findMusicianByMusicianId(int mid);
 
-    Musician findMusicianByMusicianName(String name);
-
     Musician findFirstByMusicianName(String name);
     /**
      * 更新热度

@@ -220,6 +220,10 @@ public class FillDataService {
         return fillBNS(indexFrom, indexTo, "bns2.xlsx");
     }
 
+    public String fillBNS202102(Integer indexFrom, Integer indexTo) {
+        return fillBNS(indexFrom, indexTo, "bns202102.xlsx");
+    }
+
     private String fillBNS(Integer indexFrom, Integer indexTo, String excelFile) {
         AtomicInteger count = new AtomicInteger(0);
         long time = System.currentTimeMillis();

@@ -30,11 +30,7 @@ public class SongSongVersionRepository {
 
     public SongSongVersion insert(SongSongVersion vodSongVersion) {
         if (findByCode(vodSongVersion.getCode()) != null) {
-            int code = findMaxCode() + 1;
-            if (code < 1000000) {//新版本从100W开始，避免版本重复
-                code = 1000000;
-            }
-            final int newVersionCode = code;
+            final int newVersionCode = createCode();
             vodSongVersion.setCode(newVersionCode);
             vodSongVersion.getVideoFileList().forEach(item ->
                     item.setCode(newVersionCode));
@@ -184,11 +180,12 @@ public class SongSongVersionRepository {
     }
 
 
-    public int findMaxCode() {
+    public int createCode() {
         Query query = new Query();
         query.with(Sort.by(Sort.Direction.DESC, "code")).limit(1);
         SongSongVersion songSongVersion = songMongoTemplate.findOne(query, SongSongVersion.class);
-        return songSongVersion == null ? 0 : songSongVersion.getCode();
+        int code = songSongVersion == null ? 0 : songSongVersion.getCode();
+        return code < 1000000 ? 1000000 : (code + 1);
     }
 
 
