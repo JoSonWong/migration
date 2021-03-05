@@ -51,6 +51,12 @@ public class MigrateController {
         return JsonResponseHandler.success(map);
     }
 
+    @GetMapping("/v7.0/migration/fill-data/mysql-mp3-to-mongo-song")
+    public JsonResponse mysqlToMp3() {
+        HashMap<String, String> map = new HashMap<>();
+        map.put("tip", migrateMySQL2MongoSongService.migrateMySqlMp3ToSong());
+        return JsonResponseHandler.success(map);
+    }
 
     @GetMapping("/v7.0/migration/mongo-song-to-vod/{typeFormats}")
     public JsonResponse toMongoVod(@PathVariable String typeFormats) {
@@ -134,6 +140,18 @@ public class MigrateController {
         HashMap<String, String> map = new HashMap<>();
         migrateMongoSong2KtvService.mergeUgc();
         map.put("tip", "1");
+        return JsonResponseHandler.success(map);
+    }
+
+
+    @GetMapping("/v7.0/migration/fill-file-path-to-mongo-song")
+    public JsonResponse fillFilePath(@RequestParam(value = "from", defaultValue = "0") Integer from,
+                                     @RequestParam(value = "to", defaultValue = "0") Integer to) {
+        HashMap<String, String> map = new HashMap<>();
+//        map.put("original", migrateMySQL2MongoSongService.replaceOriginalFilePath(from, to, "mp3_original.xlsx"));
+//        map.put("original_1", migrateMySQL2MongoSongService.replaceOriginalFilePath(from, to, "mp3_1_original.xlsx"));
+//        map.put("accompany", migrateMySQL2MongoSongService.replaceAccompanimentFilePath(from, to, "mp3_accompany.xlsx"));
+        map.put("accompany_1", migrateMySQL2MongoSongService.replaceAccompanimentFilePath(from, to, "mp3_1_accompany.xlsx"));
         return JsonResponseHandler.success(map);
     }
 }

@@ -4,9 +4,7 @@ package com.bestarmedia.migration.service;
 import com.bestarmedia.migration.misc.CommonUtil;
 import com.bestarmedia.migration.model.mongo.CodeName;
 import com.bestarmedia.migration.model.mongo.SearchKeyword;
-import com.bestarmedia.migration.model.mongo.song.SongInformationSimple;
-import com.bestarmedia.migration.model.mongo.song.SongMusician;
-import com.bestarmedia.migration.model.mongo.song.SongSongVersionSimple;
+import com.bestarmedia.migration.model.mongo.song.*;
 import com.bestarmedia.migration.repository.mongo.song.SongInformationRepository;
 import com.bestarmedia.migration.repository.mongo.song.SongMusicianRepository;
 import com.bestarmedia.migration.repository.mongo.song.SongSongVersionRepository;
@@ -26,7 +24,6 @@ public class MongoSongMusicianScannerService {
     private final SongMusicianRepository songMusicianRepository;
     private final SongSongVersionRepository songSongVersionRepository;
     private final SongInformationRepository songInformationRepository;
-    //    private final SongSongTypeRepository songTypeRepository;
     private int createdMusicianCount = 0;
     private int updatedMusicianCount = 0;
 
@@ -34,20 +31,26 @@ public class MongoSongMusicianScannerService {
     @Autowired
     public MongoSongMusicianScannerService(SongMusicianRepository songMusicianRepository,
                                            SongSongVersionRepository songSongVersionRepository,
-                                           SongInformationRepository songInformationRepository
-//                                           SongSongTypeRepository songTypeRepository
-    ) {
+                                           SongInformationRepository songInformationRepository) {
         this.songMusicianRepository = songMusicianRepository;
         this.songSongVersionRepository = songSongVersionRepository;
         this.songInformationRepository = songInformationRepository;
-//        this.songTypeRepository = songTypeRepository;
     }
 
     public void scanMusician() {
         scanSongMusician();
         scanVersionMusician();
+//        fillVersionSinger();
     }
 
+
+    public void fillVersionSinger() {
+        List<SongSongVersion> versions = songSongVersionRepository.findSingerCode0();
+        versions.forEach(item -> {
+            SongInformation songInformation = songInformationRepository.findByCode(item.getSong().getCode());
+            songSongVersionRepository.updateSinger(item.getCode(), songInformation.getSinger());
+        });
+    }
 
     public String scanVersionMusician() {
         AtomicInteger finished = new AtomicInteger(0);

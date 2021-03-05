@@ -191,7 +191,17 @@ public class SongSongVersionRepository {
 
     public long cleanAllMP3Data() {
         Query query = new Query();
-        query.addCriteria(Criteria.where("type").is(2));
+        query.addCriteria(Criteria.where("type").is(2).and("file.accompaniment_audio_file_path").ne(""));
+        DeleteResult result = songMongoTemplate.remove(query, SongSongVersion.class);
+        return result.getDeletedCount();       //返回执行的条
+    }
+
+    public long cleanAllMysqlMP3Data() {
+        Criteria criteria = new Criteria();
+        criteria.orOperator(Criteria.where("type").is(2).and("file.accompaniment_audio_file_path").is(""),
+                Criteria.where("type").is(1).and("file.file_path").exists(false));
+        Query query = new Query();
+        query.addCriteria(criteria);
         DeleteResult result = songMongoTemplate.remove(query, SongSongVersion.class);
         return result.getDeletedCount();       //返回执行的条
     }
@@ -199,6 +209,47 @@ public class SongSongVersionRepository {
 
     public List<SongSongVersion> findSongVersion(Integer songCode) {
         return songMongoTemplate.find(new Query(Criteria.where("song.code").is(songCode)), SongSongVersion.class);
+    }
+
+    public long updateOriginalByRemark(String fileRemark, String originalFilePath) {
+        return updateFilePath(fileRemark, "file.$.original_audio_file_path", originalFilePath);
+    }
+
+    public long updateAccompaniment(String fileRemark, String accompanimentFile) {//返回执行的条
+        return updateFilePath(fileRemark, "file.$.accompaniment_audio_file_path", accompanimentFile);
+    }
+
+    public long updateLyricFile(String fileRemark, String lyricFile) {
+        return updateFilePath(fileRemark, "file.$.lyric_file_path", lyricFile);
+    }
+
+    public long updateFilePath(String fileRemark, String field, String filePath) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("file.remark").is(fileRemark));
+        Update update = new Update();
+        update.set(field, filePath);
+        UpdateResult updateResult = songMongoTemplate.updateFirst(query, update, SongSongVersion.class);
+        return updateResult.getMatchedCount();       //返回执行的条
+    }
+
+
+    public long update(int songCode, SongSongVersionSimple version) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("song.code").is(songCode));
+        Update update = new Update();
+        update.set("litigant", version.getLitigant());
+        update.set("producer", version.getProducer());
+        update.set("publisher", version.getPublisher());
+        UpdateResult updateResult = songMongoTemplate.updateFirst(query, update, SongSongVersion.class);
+//    WriteResult upsert = vodMongoTemplate.updateMulti(query, update, "userList"); //查询到的全部更新
+//    WriteResult upsert = vodMongoTemplate.updateFirst(query, update, "userList"); //查询更新第一条
+//        UpdateResult upsert = songMongoTemplate.upsert(query, update, SongSongVersion.class);      //有则更新，没有则新增
+        return updateResult.getMatchedCount();       //返回执行的条
+    }
+
+
+    public List<SongSongVersion> findSingerCode0() {
+        return songMongoTemplate.find(new Query(Criteria.where("singer.code").is(0)), SongSongVersion.class);
     }
 
 }

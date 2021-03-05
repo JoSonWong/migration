@@ -79,7 +79,6 @@ public class SongSongVersion extends SongAuditing {
     @Field(value = "file")
     private List<VideoFile> videoFileList;//文件
 
-
     @Field(value = "note_one")
     private String noteOne;//备注1
 

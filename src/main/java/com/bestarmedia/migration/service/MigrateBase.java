@@ -13,23 +13,23 @@ import java.util.List;
 public class MigrateBase {
 
 
-    public static CodeName getEdition(Integer videoType) {
+    public static CodeName getEdition(Integer videoType, int type) {
         switch (videoType) {
             case 1:
-                return new CodeName(1, "MV");
+                return new CodeName(type == 2 ? 7 : 1, "MV");
             case 2:
-                return new CodeName(3, "现场");
+                return new CodeName(type == 2 ? 8 : 3, "现场");
             case 3:
-                return new CodeName(4, "综艺");
+                return new CodeName(type == 2 ? 9 : 4, "综艺");
             case 4:
-                return new CodeName(5, "尊享");
+                return new CodeName(type == 2 ? 10 : 5, type == 2 ? "其他" : "尊享");
             case 7:
             case 8:
             case 9:
             case 10:
-                return new CodeName(2, "重制");
+                return new CodeName(type == 2 ? 10 : 2, type == 2 ? "其他" : "重制");
             default:
-                return new CodeName(6, "其他");
+                return new CodeName(type == 2 ? 10 : 6, "其他");
         }
     }
 
@@ -61,7 +61,7 @@ public class MigrateBase {
     }
 
 
-    VideoFile createFileDto(Song song, String original, String accompaniment, String lyric) {
+    VideoFile createFileDto(Song song, String original, String accompaniment, String lyric, String remark) {
         VideoFile file = new VideoFile();
         file.setCode(song.getSongId());
         if (!StringUtils.isEmpty(song.getMediaFilePath()) && song.getMediaFilePath().toLowerCase().endsWith(".mp4")) {//视频版本，旧版的音频歌曲放到音画版
@@ -74,13 +74,13 @@ public class MigrateBase {
                 file.setScoreFilePath(song.getScoreStandardFilePath());
                 file.setCoordinatesFilePath(song.getCoordinateFilePath());
             } else {
-                file.setScoreFilePath("");
-                file.setCoordinatesFilePath("");
+                file.setScoreFilePath(null);
+                file.setCoordinatesFilePath(null);
             }
             file.setVolume(song.getVolume());
         } else {
-            file.setOriginalAudioFilePath(StringUtils.isEmpty(original) ? ("https://song-enterprise.oss-cn-shenzhen.aliyuncs.com/song/h264/" + song.getMediaFilePath().substring(song.getMediaFilePath().lastIndexOf("/") + 1))//旧版的纯音频歌曲
-                    : original);
+            file.setOriginalAudioFilePath(StringUtils.isEmpty(original) ?
+                    ("https://song-enterprise.oss-cn-shenzhen.aliyuncs.com/song/h264/" + song.getMediaFilePath().substring(song.getMediaFilePath().lastIndexOf("/") + 1)) : original);
             file.setAccompanimentAudioFilePath(accompaniment);
             file.setLyricFilePath(lyric);
             file.setResolutionWidth(1920);
@@ -95,7 +95,7 @@ public class MigrateBase {
         file.setHot(0L);
         file.setRecommend(song.getSofthard());
         file.setStatus(1);
-        file.setRemark("");
+        file.setRemark(remark);
         return file;
     }
 }

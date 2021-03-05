@@ -100,7 +100,7 @@ public interface MysqlSongRepository extends JpaRepository<Song, Integer>, JpaSp
     int setRecommend(@Param(value = "softhard") int softhard);
 
 
-    @Query(value = "select * from vod_song as s where s.status=1 and s.deleted_at is NULL ORDER BY s.song_name ASC, s.singer ASC,s.video_type ASC  limit :startIndex, :pageSize", nativeQuery = true)
+    @Query(value = "select * from vod_song as s where s.status=1  and s.deleted_at is NULL ORDER BY s.song_name ASC, s.singer ASC,s.video_type ASC  limit :startIndex, :pageSize", nativeQuery = true)
     List<Song> getSongSameName(@Param(value = "startIndex") int startIndex, @Param(value = "pageSize") int pageSize);
 
 
@@ -118,4 +118,8 @@ public interface MysqlSongRepository extends JpaRepository<Song, Integer>, JpaSp
 
     @Query(value = "select * from vod_song as s where s.ktv_net_code <> ''   and  s.status=1 and s.deleted_at is NULL ORDER BY s.song_name ASC, s.singer ASC,s.video_type ASC ", nativeQuery = true)
     List<Song> getUgc();
+
+
+    @Query(value = "select * from vod_song as s where s.status=1 and  s.media_file_path not like '%.mp4' and s.deleted_at is NULL ORDER BY s.song_name ASC, s.singer ASC,s.video_type ASC ", nativeQuery = true)
+    List<Song> getSongSameNameMp3();
 }

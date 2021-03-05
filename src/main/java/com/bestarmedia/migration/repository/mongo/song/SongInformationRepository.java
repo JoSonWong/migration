@@ -45,25 +45,18 @@ public class SongInformationRepository {
     }
 
 
-    public int findMaxCode() {
+    public int createCode() {
         Query query = new Query();
         query.with(Sort.by(Sort.Direction.DESC, "code")).limit(1);
-        SongInformation songSongVersion = songMongoTemplate.findOne(query, SongInformation.class);
-        return songSongVersion == null ? 0 : songSongVersion.getCode();
+        SongInformation information = songMongoTemplate.findOne(query, SongInformation.class);
+        int code = information == null ? 0 : information.getCode();
+        return code < 1000000 ? 1000000 : (code + 1);
     }
 
     public SongInformation insert(SongInformation song) {
-        if (song.getCode() > 0) {
-            SongInformation songInformation = findByCode(song.getCode());
-            if (songInformation != null) {
-                return songInformation;
-            }
-        } else {
-            int code = findMaxCode() + 1;
-            if (code < 1000000) {//新歌曲从100W开始，避免重复
-                code = 1000000;
-            }
-            song.setCode(code);
+        SongInformation songInformation = findByCode(song.getCode());
+        if (songInformation != null) {
+            return songInformation;
         }
         return songMongoTemplate.insert(song);
     }
@@ -146,6 +139,15 @@ public class SongInformationRepository {
         query.addCriteria(criteria).with(Sort.by(Sort.Direction.DESC, "hot_sum"));
         Pageable pageable = PageRequest.of(currentPage, perPage);
         return songMongoTemplate.find(query.with(pageable), SongInformation.class);//查出歌曲列表
+    }
+
+
+    public SongInformation update(SongInformation song) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("code").is(song.getCode()));
+        songMongoTemplate.remove(query, SongInformation.class);
+        return songMongoTemplate.insert(song);
+
     }
 
 }

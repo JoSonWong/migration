@@ -5,7 +5,10 @@ import com.bestarmedia.migration.misc.CommonUtil;
 import com.bestarmedia.migration.misc.DateUtil;
 import com.bestarmedia.migration.model.mongo.*;
 import com.bestarmedia.migration.model.mongo.song.*;
-import com.bestarmedia.migration.model.mysql.*;
+import com.bestarmedia.migration.model.mysql.Language;
+import com.bestarmedia.migration.model.mysql.Musician;
+import com.bestarmedia.migration.model.mysql.Part;
+import com.bestarmedia.migration.model.mysql.Song;
 import com.bestarmedia.migration.repository.mongo.song.*;
 import com.bestarmedia.migration.repository.mysql.*;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -22,6 +25,7 @@ import org.springframework.util.StringUtils;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 @Service
 @Slf4j
@@ -429,6 +433,7 @@ public class MigrateMySQL2MongoSongService extends MigrateBase {
                         insertToUgc(item);
                     } else {
                         String key = (songName + ";" + item.getSongId()).toUpperCase();
+
                         if (!(StringUtils.isEmpty(item.getSinger()) || "[]".equals(item.getSinger()) || "[\"\"]".equals(item.getSinger()) || "[\" \"]".equals(item.getSinger()))) {
                             List<String> singerNames = CommonUtil.OBJECT_MAPPER.readValue(item.getSinger(), new TypeReference<List<String>>() {
                             });
@@ -437,8 +442,7 @@ public class MigrateMySQL2MongoSongService extends MigrateBase {
                         }
                         if (map.containsKey(key)) {
                             SongInformation vodSong = map.get(key);
-                            createSongVersion(vodSong.getCode(), vodSong.getSongName(), item, item.getMediaFilePath().toLowerCase().endsWith(".mp4") ? 1 : 2,
-                                    item.getMediaFilePath().toLowerCase().endsWith(".mp4") ? "" : item.getMediaFilePath(), "", "");//纯音频歌曲保存为音画版
+                            createSongVersionBySong(vodSong.getCode(), vodSong.getSongName(), item, item.getMediaFilePath().toLowerCase().endsWith(".mp4") ? 1 : 2, "", "", "", "");//纯音频歌曲保存为音画版
                             vodSong.setHot(0L);
                             vodSong.setHotSum(vodSong.getHotSum() + item.getHot());
 
@@ -495,22 +499,20 @@ public class MigrateMySQL2MongoSongService extends MigrateBase {
                             }
                             vodSong.setTag(tagCodeNames);
                             map.put(key, vodSong);
-
                         } else {
-                            map.put(key, createSongInformation(item, songName, 1, "", "", ""));
+                            map.put(key, createSongInformation(item, songName, 1));
+                            createSongVersionBySong(item.getSongId(), item.getSongName(), item, item.getMediaFilePath().toLowerCase().endsWith(".mp4") ? 1 : 2, "", "", "", "");//纯音频歌曲保存为音画版
                         }
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
             });
-
             System.out.println(DateUtil.getDateTime(Calendar.getInstance().getTime()) + " 歌曲总数：" + map.size() + " 处理数据耗时：" + (System.currentTimeMillis() - cur));
             cur = System.currentTimeMillis();
             for (Map.Entry<String, SongInformation> entry : map.entrySet()) {
-                SongInformation save = songInformationRepository.insert(entry.getValue());
+                SongInformation save = songInformationRepository.update(entry.getValue());
                 songCount++;
-//                System.out.println(DateUtil.getDateTime(Calendar.getInstance().getTime()) + " 保存歌曲信息到mongodb：" + CommonUtil.OBJECT_MAPPER.writeValueAsString(save));
             }
             System.out.println(DateUtil.getDateTime(Calendar.getInstance().getTime()) + " 歌曲总数：" + map.size() + " 存储数据耗时：" + (System.currentTimeMillis() - cur));
         } catch (Exception e) {
@@ -532,16 +534,15 @@ public class MigrateMySQL2MongoSongService extends MigrateBase {
         return songType;
     }
 
-    private SongInformation createSongInformation(Song item, String songName, int type, String original, String accompaniment, String lyric) {
+    private SongInformation createSongInformation(Song item, String songName, int status) {
         SongInformation vodSong = new SongInformation();
-        vodSong.setCode(item.getSongId());
+        vodSong.setCode(item.getSongId() > 0 ? item.getSongId() : songInformationRepository.createCode());
         vodSong.setSongInitial(StringUtils.isEmpty(item.getSongInitial()) ? "" : item.getSongInitial().toUpperCase());
         vodSong.setSongName(songName);
         vodSong.setSinger(getIdNames(item.getSingerMid(), item.getSinger()));
         vodSong.setLyricist(getIdNames(item.getLyricistMid(), item.getLyricist()));
         vodSong.setComposer(getIdNames(item.getComposerMid(), item.getComposer()));
         vodSong.setWordCount(item.getWordCount());
-
 
         vodSong.setSongType(createSongType(item));
 
@@ -567,7 +568,7 @@ public class MigrateMySQL2MongoSongService extends MigrateBase {
         vodSong.setRecommend(item.getSofthard());
         vodSong.setHot(0L);
         vodSong.setHotSum(item.getHot());
-        vodSong.setStatus(item.getStatus());
+        vodSong.setStatus(status);
         vodSong.setNoteOne("");
         vodSong.setNoteTwo("");
         vodSong.setNoteThree("");
@@ -575,9 +576,7 @@ public class MigrateMySQL2MongoSongService extends MigrateBase {
         vodSong.setUpdatedAt(item.getUpdatedAt());
         vodSong.setCreateUser(item.getCreateUser());
         vodSong.setUpdateUser(item.getUpdateUser());
-        createSongVersion(vodSong.getCode(), vodSong.getSongName(), item, type, original, accompaniment, lyric);
-
-        return vodSong;
+        return songInformationRepository.insert(vodSong);
     }
 
     private boolean isContainName(List<CodeNameParent> codeNames, String name) {
@@ -589,12 +588,12 @@ public class MigrateMySQL2MongoSongService extends MigrateBase {
         return false;
     }
 
-    private SongSongVersion createSongVersion(Integer songId, String songName, Song song, int type, String original, String accompaniment, String lyric) {
+    private SongSongVersion createSongVersionBySong(Integer songId, String songName, Song song, int type, String original, String accompaniment, String lyric, String remark) {
         SongSongVersion version = new SongSongVersion();
         version.setCode(song.getSongId());//以旧歌曲版本命名版本id
         version.setSong(new CodeName(songId, songName));
         version.setSongCodeOld(song.getSongId());
-        CodeName edition = getEdition(song.getVideoType());
+        CodeName edition = getEdition(song.getVideoType(), type);
         version.setType(type);
         version.setVersionsType(edition.getCode());
         version.setVersionsName(edition.getName());
@@ -632,22 +631,91 @@ public class MigrateMySQL2MongoSongService extends MigrateBase {
         version.setNoteTwo(song.getNoteTwo());
         version.setNoteThree(song.getNoteThree());
         List<VideoFile> files = new ArrayList<>();
-        files.add(createFileDto(song, original, accompaniment, lyric));
+        files.add(createFileDto(song, original, accompaniment, lyric, remark));
         version.setVideoFileList(files);
-//        List<String> ktvNetCode = null;
-//        if (!StringUtils.isEmpty(song.getKtvNetCode())) {//定向歌曲信息
-//            ktvNetCode = new ArrayList<>();
-//            ktvNetCode.add(song.getKtvNetCode());
-//        }
-        SongSongVersion save = songSongVersionRepository.insert(version);
         versionCount++;
-        return save;
+        return songSongVersionRepository.insert(version);
+    }
+
+
+    private SongSongVersion createSongVersionByVersion(SongSongVersion version, int type, int volume, String original, String accompaniment, String lyric, String remark) {
+        version.set_id(null);
+        int versionCode = songSongVersionRepository.createCode();
+        version.setCode(versionCode);
+        if (type != version.getType()) {
+            version.setType(type);
+            switch (version.getVersionsType()) {
+                case 1:
+                    version.setVersionsType(7);
+                    break;
+                case 3:
+                    version.setVersionsType(8);
+                    break;
+                case 4:
+                    version.setVersionsType(9);
+                    break;
+                default:
+                    version.setVersionsType(10);
+                    version.setVersionsName("其他");
+                    break;
+            }
+        }
+
+        version.setNoteOne(null);
+        version.setNoteTwo(null);
+        version.setNoteThree(null);
+        version.setCreateUser(0);
+        version.setUpdateUser(0);
+        version.setCreatedAt(new Date());
+        version.setUpdatedAt(new Date());
+        version.setSource(String.valueOf(0));
+        version.setIncreaseHot(0L);
+        version.setVersionHot(0L);
+        version.setVersionHotSum(0L);
+        version.setRecommend(0);
+        version.setStatus(1);
+
+        VideoFile videoFile = createFileDto(versionCode, volume, original, accompaniment, lyric);
+        videoFile.setRemark(remark);
+        List<VideoFile> files = new ArrayList<>();
+        files.add(videoFile);
+        version.setVideoFileList(files);
+
+        return songSongVersionRepository.insert(version);
+    }
+
+
+    private SongSongVersion createSongVersionBySongInformation(SongInformation songInformation, int type, int volume, String original, String accompaniment, String lyric, String remark) {
+        SongSongVersion version = new SongSongVersion();
+        version.setCode(songSongVersionRepository.createCode());//以旧歌曲版本命名版本id
+        int versionCode = songSongVersionRepository.createCode();
+        version.setCode(versionCode);
+        version.setSong(new CodeName(songInformation.getCode(), songInformation.getSongName()));
+        version.setSinger(songInformation.getSinger());
+        version.setType(type);
+        version.setVersionsType(type == 2 ? 10 : 6);//其他
+        version.setVersionsName("其他");
+        version.setSource("0");
+        version.setIncreaseHot(0L);
+        version.setVersionHot(0L);
+        version.setVersionHotSum(0L);
+        version.setRecommend(0);
+        version.setStatus(1);
+        version.setCreatedAt(new Date());
+        version.setUpdatedAt(new Date());
+        VideoFile videoFile = createFileDto(versionCode, volume, original, accompaniment, lyric);
+        videoFile.setRemark(remark);
+        List<VideoFile> files = new ArrayList<>();
+        files.add(videoFile);
+        version.setVideoFileList(files);
+        return songSongVersionRepository.insert(version);
     }
 
 
     public String fillMP3(Integer indexFrom, Integer indexTo) {
         System.out.println("清除MP3版本信息数量:" + songSongVersionRepository.cleanAllMP3Data());
-        return fillMP3(indexFrom, indexTo, "mp3_msg.xlsx");
+        String mp3 = fillMP3(indexFrom, indexTo, "mp3.xlsx");
+        return mp3 + fillMP3(indexFrom, indexTo, "mp3_1.xlsx");
     }
 
     private String fillMP3(Integer indexFrom, Integer indexTo, String excelFile) {
@@ -678,32 +746,7 @@ public class MigrateMySQL2MongoSongService extends MigrateBase {
                         + " 歌词：" + lyric);
                 if (!StringUtils.isEmpty(songName) && !StringUtils.isEmpty(singer)) {
                     String[] singers = singer.split("\\|");
-                    List<String> singerList = Arrays.asList(singers);
-                    SongSongVersion songSongVersion = songSongVersionRepository.findBySongNameAndSingerName(songName, singerList);
-                    if (songSongVersion != null) {
-//                        System.out.println("第" + row + "行，歌名：" + songName + " 歌星：" + singer + " 匹配到版本信息 code：" + songSongVersion.getCode() + " 歌名：" + songSongVersion.getSong().getName());
-                        SongSongVersion songSongVersion1 = createMP3SongVersion(songSongVersion, original, accompaniment, lyric);
-                        SongSongVersion insert = songSongVersionRepository.insert(songSongVersion1);
-//                        System.out.println("增加音画版本：" + CommonUtil.OBJECT_MAPPER.writeValueAsString(insert));
-                        count.getAndIncrement();
-                    } else {
-                        SongInformation information = createSongInformationByMySQL(songName, singers, 2, original, accompaniment, lyric);
-                        if (information != null) {
-                            information.setStatus(1);
-                            SongInformation save = songInformationRepository.insert(information);
-                            System.out.println("增加音画版本歌曲信息：" + CommonUtil.OBJECT_MAPPER.writeValueAsString(save));
-                        } else {
-                            information = createSongInformationByMp3Msg(songName, singers, original, accompaniment, lyric);
-                            if (information != null) {
-                                information.setStatus(0);
-                                SongInformation save = songInformationRepository.insert(information);
-                                System.out.println("通歌名、歌星增加音画版本歌曲信息：" + CommonUtil.OBJECT_MAPPER.writeValueAsString(save));
-                            } else {
-                                countNotFound.getAndIncrement();
-                                notFound.append("[").append(row).append(":").append(songName).append("]");
-                            }
-                        }
-                    }
+                    fillMp3(0, songName, singers, original, accompaniment, lyric, excelFile + "_" + row);
                 }
             }
             String tip = "插入音画版版本总数：" + count.get() + " 无法匹配数量：" + countNotFound.get() + " 无法匹配：" + notFound.toString() + " 耗时：" + (System.currentTimeMillis() - time) / 1000;
@@ -715,78 +758,111 @@ public class MigrateMySQL2MongoSongService extends MigrateBase {
         return "";
     }
 
-    public static String toFirstChar(String chinese) {
-        String pinyinStr = "";
-        char[] newChar = chinese.toCharArray();  //转为单个字符
-        HanyuPinyinOutputFormat defaultFormat = new HanyuPinyinOutputFormat();
-        defaultFormat.setCaseType(HanyuPinyinCaseType.LOWERCASE);
-        defaultFormat.setToneType(HanyuPinyinToneType.WITHOUT_TONE);
-        AtomicBoolean atomicBoolean = new AtomicBoolean(true);
-        for (int i = 0; i < newChar.length; i++) {
-            if (newChar[i] > 128) {//汉字
-                atomicBoolean.set(true);
-                try {
-                    pinyinStr += PinyinHelper.toHanyuPinyinStringArray(newChar[i], defaultFormat)[0].charAt(0);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            } else if ('\0' == newChar[i]) {
-                atomicBoolean.set(true);
-            } else {//非汉字
-                if (atomicBoolean.get()) {
-                    pinyinStr += newChar[i];
-                    atomicBoolean.set(false);
+    private void fillMp3(int mysqlSongId, String songName, String[] singers, String original, String accompaniment, String lyric, String remark) throws Exception {
+        List<String> singerList = Arrays.asList(singers);
+        SongSongVersion version = songSongVersionRepository.findBySongNameAndSingerName(songName, singerList);
+        if (version != null) {
+            SongSongVersion songSongVersion1 = createSongVersionByVersion(version, 2, 80, original, accompaniment, lyric, remark);
+        } else {
+            Song song = mysqlSongId > 0 ? createSongInformationByMySQL(mysqlSongId) : createSongInformationByMySQL(songName, singers);
+            if (song != null) {
+                SongInformation information = createSongInformation(song, song.getSongName(), 1);
+                System.out.println("增加音画版本歌曲信息：" + CommonUtil.OBJECT_MAPPER.writeValueAsString(information));
+                song.setVolume(80);
+                song.setMediaFilePath("");
+                song.setStatus(1);
+                createSongVersionBySong(song.getSongId(), songName, song, 2, original, accompaniment, lyric, remark);
+            } else {
+                SongInformation information = createSongInformationByMp3Msg(songName, singers);
+                if (information != null) {
+                    createSongVersionBySongInformation(information, 2, 80, original, accompaniment, lyric, remark);
+                } else {
+//                    countNotFound.getAndIncrement();
+//                    notFound.append("[").append(row).append(":").append(songName).append("]");
                 }
             }
+        }
+    }
+
+    public static String toFirstChar(String chinese) {
+        String pinyinStr = "";
+        try {
+            char[] newChar = chinese.toCharArray();  //转为单个字符
+            HanyuPinyinOutputFormat defaultFormat = new HanyuPinyinOutputFormat();
+            defaultFormat.setCaseType(HanyuPinyinCaseType.LOWERCASE);
+            defaultFormat.setToneType(HanyuPinyinToneType.WITHOUT_TONE);
+            AtomicBoolean atomicBoolean = new AtomicBoolean(true);
+            for (int i = 0; i < newChar.length; i++) {
+
+                if (newChar[i] > 128) {//汉字
+                    atomicBoolean.set(true);
+                    try {
+                        pinyinStr += PinyinHelper.toHanyuPinyinStringArray(newChar[i], defaultFormat)[0].charAt(0);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                } else if ('\0' == newChar[i]) {
+                    atomicBoolean.set(true);
+                } else {//非汉字
+                    if (atomicBoolean.get()) {
+                        pinyinStr += newChar[i];
+                        atomicBoolean.set(false);
+                    }
+                }
+            }
+            return pinyinStr;
+        } catch (Exception e) {
+            e.printStackTrace();
         }
         return pinyinStr;
     }
 
-    private SongInformation createSongInformationByMp3Msg(String songName, String[] singers, String original, String accompaniment, String lyric) {
+    private SongInformation createSongInformationByMp3Msg(String songName, String[] singers) {
         try {
-            Song song = new Song();
-            song.setId(0);
-            song.setSongId(0);
-            song.setSongName(songName);
-            if (singers != null) {
-                List<String> singerNames = Arrays.asList(singers);
-                song.setSinger(CommonUtil.OBJECT_MAPPER.writeValueAsString(singerNames));
-                List<Integer> singerId = new ArrayList<>();
-                singerNames.forEach(item -> {
-                    Musician musician = mysqlMusicianRepository.findFirstByMusicianName(item);
-                    singerId.add(musician == null ? 0 : musician.getMusicianId());
-                });
-                song.setSingerMid(CommonUtil.OBJECT_MAPPER.writeValueAsString(singerId));
-            }
+            SongInformation songInformation = new SongInformation();
+            songInformation.setCode(songInformationRepository.createCode());
             String initial = toFirstChar(songName).toUpperCase();
-            song.setSongInitial(initial);
-            song.setWordCount(initial.length());
-            SongType songType = new SongType();
-            songType.setId(1);
+            songInformation.setSongInitial(initial);
+            songInformation.setSongName(songName);
+            songInformation.setWordCount(initial.length());
+            CodeNameParent songType = new CodeNameParent();
+            songType.setCode(1);
             songType.setName("通俗");
-            song.setSongTypeId(1);
-            song.setSongType(songType);
-
-            Language language = new Language();
-            if (CommonUtil.isContainChinese(songName)) {
-                language.setId(1);
-                language.setLanguageName("国语");
-            } else {
-                language.setId(15);
-                language.setLanguageName("其他语言");
+            songType.setParentCode(1);
+            songType.setParentName("通俗");
+            songInformation.setSongType(songType);
+            List<CodeName> singer = new ArrayList<>();
+            if (singers != null) {
+                for (String s : singers) {
+                    SongMusician musician = songMusicianRepository.findSingerByName(s);
+                    if (musician != null) {
+                        singer.add(new CodeName(musician.getCode(), musician.getMusicianName()));
+                    } else {
+                        singer.add(new CodeName(0, s));
+                    }
+                }
             }
-            song.setLanguageId(language.getId());
-            song.setLanguage(language);
-
-            song.setStatus(0);//
-            return createSongInformation(song, songName, 2, original, accompaniment, lyric);
+            songInformation.setSinger(singer);
+            songInformation.setLanguage(CommonUtil.isContainChinese(songName) ? new CodeName(1, "国语") : new CodeName(15, "其他语言"));
+            songInformation.setStatus(0);//
+            songInformation.setRecommend(0);
+            songInformation.setHot(0L);
+            songInformation.setHotSum(0L);
+            songInformation.setCreatedAt(new Date());
+            songInformation.setUpdatedAt(new Date());
+            System.out.println("通歌名、歌星增加音画版本歌曲信息：" + CommonUtil.OBJECT_MAPPER.writeValueAsString(songInformation));
+            return songInformationRepository.insert(songInformation);
         } catch (Exception e) {
             e.printStackTrace();
         }
         return null;
     }
 
-    private SongInformation createSongInformationByMySQL(String songName, String[] singers, int type, String o, String a, String l) {
+    private Song createSongInformationByMySQL(int songId) {
+        return mysqlSongRepository.findSongBySongId(songId);
+    }
+
+    private Song createSongInformationByMySQL(String songName, String[] singers) {
         List<Song> songs = mysqlSongRepository.findAllBySongName(songName);
         if (songs != null && !songs.isEmpty()) {
             for (Song item : songs) {
@@ -794,7 +870,7 @@ public class MigrateMySQL2MongoSongService extends MigrateBase {
                     List<String> singerNames = CommonUtil.OBJECT_MAPPER.readValue(item.getSinger(), new TypeReference<List<String>>() {
                     });
                     if (matchElement(singers, singerNames) == singers.length) {
-                        return createSongInformation(item, songName, type, o, a, l);
+                        return item;
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -818,52 +894,8 @@ public class MigrateMySQL2MongoSongService extends MigrateBase {
         return matchCount;
     }
 
-    private SongSongVersion createMP3SongVersion(SongSongVersion version, String original, String accompaniment, String lyric) {
-        version.set_id(null);
-        int versionCode = songSongVersionRepository.createCode();
-        version.setCode(versionCode);
-        version.setSongCodeOld(0);
-        version.setType(2);
-        version.setNoteOne(null);
-        version.setNoteTwo(null);
-        version.setNoteThree(null);
-        version.setCreateUser(0);
-        version.setUpdateUser(0);
-        version.setCreatedAt(new Date());
-        version.setUpdatedAt(new Date());
-        version.setSource(String.valueOf(0));
-        version.setIncreaseHot(0L);
-        version.setVersionHot(0L);
-        version.setVersionHotSum(0L);
-        version.setRecommend(0);
-        version.setStatus(1);
 
-        VideoFile videoFile;
-        List<VideoFile> videoFiles = version.getVideoFileList();
-        if (videoFiles != null && !videoFiles.isEmpty()) {
-            videoFile = videoFiles.get(0);
-            videoFile.setCode(versionCode);
-            videoFile.setOriginalAudioFilePath(original);
-            videoFile.setAccompanimentAudioFilePath(accompaniment);
-            videoFile.setLyricFilePath(lyric);
-            videoFile.setFileName(null);
-            videoFile.setFilePath(null);
-            videoFile.setResolutionWidth(1920);
-            videoFile.setResolutionHeight(1080);
-            videoFile.setScoreFilePath(null);
-            videoFile.setCoordinatesFilePath(null);
-            videoFile.setStatus(1);
-        } else {
-            videoFile = createFileDto(versionCode, original, accompaniment, lyric);
-        }
-        List<VideoFile> files = new ArrayList<>();
-        files.add(videoFile);
-        version.setVideoFileList(files);
-        return version;
-    }
-
-
-    VideoFile createFileDto(int versionCode, String original, String accompaniment, String lyric) {
+    VideoFile createFileDto(int versionCode, int volume, String original, String accompaniment, String lyric) {
         VideoFile file = new VideoFile();
         file.setCode(versionCode);
         file.setFileName(null);
@@ -875,7 +907,7 @@ public class MigrateMySQL2MongoSongService extends MigrateBase {
         file.setScoreFilePath(null);
         file.setCoordinatesFilePath(null);
         file.setAudioTrack(0);
-        file.setVolume(80);
+        file.setVolume(volume);
         file.setHot(0L);
         file.setRecommend(0);
         file.setStatus(1);
@@ -884,6 +916,143 @@ public class MigrateMySQL2MongoSongService extends MigrateBase {
         file.setLyricFilePath(lyric);
         file.setRemark(null);
         return file;
+    }
+
+
+    public String replaceOriginalFilePath(Integer indexFrom, Integer indexTo, String excelFile) {
+        AtomicLong updatedCount = new AtomicLong(0);
+        long time = System.currentTimeMillis();
+        String oldExcelFile = excelFile.replace("_original", "");
+        XSSFSheet sheet;
+        try {
+            sheet = FillDataService.readExcel(excelFile);
+            int size = sheet.getPhysicalNumberOfRows();
+            int from = 1;
+            if (indexFrom > 0) {
+                from = indexFrom;
+            }
+            if (indexTo > 0) {
+                size = indexTo;
+            }
+            //循环取每行的数据
+            for (int row = from; row < size; row++) {
+                String fileName = FillDataService.getString(sheet.getRow(row).getCell(1));//本地文件名字
+                String filePath = FillDataService.getString(sheet.getRow(row).getCell(3));//本地文件名字
+                String excelLine = fileName.substring(0, fileName.indexOf("_"));
+                String remark = oldExcelFile + "_" + (excelLine);
+                filePath = filePath.replace("http://mt.beidousat.com/song/", "https://song-enterprise.oss-cn-shenzhen.aliyuncs.com/song/");
+                System.out.println("第" + row + "行，本地文件名字：" + fileName + " 对应原excel行：" + remark + " 原唱文件：" + filePath);
+                long count = songSongVersionRepository.updateOriginalByRemark(remark, filePath);
+                updatedCount.set(updatedCount.get() + count);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "更新原唱文件地址数量：" + updatedCount.get() + " 耗时：" + (System.currentTimeMillis() - time) + "秒";
+    }
+
+    public String replaceAccompanimentFilePath(Integer indexFrom, Integer indexTo, String excelFile) {
+        AtomicLong updatedCount = new AtomicLong(0);
+        long time = System.currentTimeMillis();
+        String oldExcelFile = excelFile.replace("_accompany", "");
+        XSSFSheet sheet;
+        try {
+            sheet = FillDataService.readExcel(excelFile);
+            int size = sheet.getPhysicalNumberOfRows();
+            int from = 1;
+            if (indexFrom > 0) {
+                from = indexFrom;
+            }
+            if (indexTo > 0) {
+                size = indexTo;
+            }
+            //循环取每行的数据
+            for (int row = from; row < size; row++) {
+                String fileName = FillDataService.getString(sheet.getRow(row).getCell(1));//本地文件名字
+                String filePath = FillDataService.getString(sheet.getRow(row).getCell(3));//本地文件名字
+                int excelLine = Integer.valueOf(fileName.substring(0, fileName.indexOf("_")));
+                String remark = oldExcelFile + "_" + (excelLine);
+                filePath = filePath.replace("http://mt.beidousat.com/song/", "https://song-enterprise.oss-cn-shenzhen.aliyuncs.com/song/");
+                System.out.println("第" + row + "行，本地文件名字：" + fileName + " 对应原excel行：" + remark + " 伴唱唱文件：" + filePath);
+
+                long count = songSongVersionRepository.updateAccompaniment(remark, filePath);
+                updatedCount.set(updatedCount.get() + count);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "更新伴唱文件地址数量：" + updatedCount.get() + " 耗时：" + (System.currentTimeMillis() - time) + "秒";
+    }
+
+
+    public String replaceLyricFilePath(Integer indexFrom, Integer indexTo, String excelFile) {
+        AtomicLong updatedCount = new AtomicLong(0);
+        long time = System.currentTimeMillis();
+        String oldExcelFile = excelFile.replace("_lyric", "");
+        XSSFSheet sheet;
+        try {
+            sheet = FillDataService.readExcel(excelFile);
+            int size = sheet.getPhysicalNumberOfRows();
+            int from = 1;
+            if (indexFrom > 0) {
+                from = indexFrom;
+            }
+            if (indexTo > 0) {
+                size = indexTo;
+            }
+            //循环取每行的数据
+            for (int row = from; row < size; row++) {
+                String fileName = FillDataService.getString(sheet.getRow(row).getCell(1));//本地文件名字
+                String filePath = FillDataService.getString(sheet.getRow(row).getCell(3));//本地文件名字
+                int excelLine = Integer.valueOf(fileName.substring(0, fileName.indexOf("_")));
+                String remark = oldExcelFile + "_" + (excelLine);
+                filePath = filePath.replace("http://mt.beidousat.com/song/", "https://song-enterprise.oss-cn-shenzhen.aliyuncs.com/song/");
+                System.out.println("第" + row + "行，本地文件名字：" + fileName + " 对应原excel行：" + remark + " 歌词文件：" + filePath);
+                long count = songSongVersionRepository.updateLyricFile(remark, filePath);
+                updatedCount.set(updatedCount.get() + count);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "更新歌词文件地址数量：" + updatedCount.get() + " 耗时：" + (System.currentTimeMillis() - time) + "秒";
+    }
+
+
+    public String migrateMySqlMp3ToSong() {
+        AtomicLong count = new AtomicLong(0);
+        long cur = System.currentTimeMillis();
+        try {
+            System.out.println(DateUtil.getDateTime(Calendar.getInstance().getTime()) + " 开始处理原6.0 MP3歌曲 " + " 清理原MP3音频数据：" + songSongVersionRepository.cleanAllMysqlMP3Data());
+            List<Song> list = mysqlSongRepository.getSongSameNameMp3();
+            list.forEach(item -> {
+                try {
+                    String songName = CommonUtil.deleteParenthesesEnd(CommonUtil.deleteSpaceAndUpperFirst(item.getSongName()));
+                    if (!StringUtils.isEmpty(item.getKtvNetCode())) {//KTV定向歌曲
+                        insertToUgc(item);
+                    } else {
+                        String[] singers = new String[]{""};
+                        if (item.getSinger() != null) {
+                            try {
+                                List<String> singerNames = CommonUtil.OBJECT_MAPPER.readValue(item.getSinger(), new TypeReference<List<String>>() {
+                                });
+                                singers = new String[singerNames.size()];
+                                singerNames.toArray(singers);
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
+                        String filePath = "https://song-enterprise.oss-cn-shenzhen.aliyuncs.com/song/h264/" + item.getMediaFilePath().substring(item.getMediaFilePath().lastIndexOf("/"));
+                        fillMp3(item.getSongId(), songName, singers, filePath, "", "", null);
+                        count.getAndIncrement();
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            });
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "纯音频迁移为音画版，数量：" + count.get() + " 耗时：" + (System.currentTimeMillis() - cur) / 1000 + "秒";
     }
 
 }
