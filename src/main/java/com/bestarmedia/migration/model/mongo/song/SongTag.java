@@ -26,6 +26,9 @@ public class SongTag extends SongAuditing {
     @Field(value = "parent_code")
     private int parentCode;
 
+    @Field(value = "parent_name")
+    private String parentName;
+
     @Field(value = "status")
     private int status;
 

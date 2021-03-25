@@ -360,7 +360,7 @@ public class MigrateMySQL2MongoSongService extends MigrateBase {
         System.out.println("清除版本信息数量:" + songSongVersionRepository.cleanAllData());
         System.out.println("清除歌曲信息数量:" + songInformationRepository.cleanAllData());
         System.out.println("清除专辑信息数量:" + songAlbumRepository.cleanAllData());
-        System.out.println("清除标签信息数量:" + songTagRepository.cleanAllData());
+//        System.out.println("清除标签信息数量:" + songTagRepository.cleanAllData());
         System.out.println("清除UGC信息数量:" + songUgcRepository.cleanAllData());
         versionCount = 0;
         songCount = 0;
@@ -478,22 +478,19 @@ public class MigrateMySQL2MongoSongService extends MigrateBase {
                                 vodSong.setStatus(item.getStatus());
                                 System.out.println("补充上架状态：" + item.getId() + "  " + item.getStatus());
                             }
-                            List<CodeNameParent> tagCodeNames = vodSong.getTag();
+                            List<TagSimple> tagCodeNames = vodSong.getTag();
                             if (tagCodeNames == null) {
                                 tagCodeNames = new ArrayList<>();
                             }
                             if (!StringUtils.isEmpty(item.getLyricFileMd5())) {
                                 String[] tags = item.getLyricFileMd5().split("\\|");
                                 for (String tag : tags) {
-                                    if (tagCodeNames.isEmpty() || !isContainName(tagCodeNames, tag)) {
+                                    if (tagCodeNames.isEmpty() || !isContainTagName(tagCodeNames, tag)) {
                                         SongTag songTag = songTagRepository.findByName(tag);
-                                        if (songTag == null) {
-                                            songTag = songTagRepository.insert(tag, songName, item.getSinger());
+                                        if (songTag != null) {
+                                            TagSimple codeNameParent = new TagSimple(songTag.getCode(), songTag.getTagName(), songTag.getParentCode(), songTag.getParentName());
+                                            tagCodeNames.add(codeNameParent);
                                         }
-                                        CodeNameParent codeNameParent = new CodeNameParent(0, "");
-                                        codeNameParent.setCode(songTag.getCode());
-                                        codeNameParent.setName(songTag.getTagName());
-                                        tagCodeNames.add(codeNameParent);
                                     }
                                 }
                             }
@@ -547,20 +544,19 @@ public class MigrateMySQL2MongoSongService extends MigrateBase {
         vodSong.setSongType(createSongType(item));
 
         vodSong.setLanguage(new CodeName(item.getLanguage().getId(), item.getLanguage().getLanguageName()));
-        List<CodeNameParent> tagCodeNames = new ArrayList<>();
+        List<TagSimple> tagCodeNames = new ArrayList<>();
         if (!StringUtils.isEmpty(item.getLyricFileMd5())) {
             String[] tags = item.getLyricFileMd5().split("\\|");
             for (String tag : tags) {
                 SongTag songTag = songTagRepository.findByName(tag);
-                if (songTag == null) {
-                    songTag = songTagRepository.insert(tag, songName, item.getSinger());
+                if (songTag != null) {
+                    TagSimple codeNameParent = new TagSimple();
+                    codeNameParent.setTagCode(songTag.getCode());
+                    codeNameParent.setTagName(songTag.getTagName());
+                    codeNameParent.setParentCode(songTag.getParentCode());
+                    codeNameParent.setParentName(songTag.getParentName());
+                    tagCodeNames.add(codeNameParent);
                 }
-                CodeNameParent codeNameParent = new CodeNameParent();
-                codeNameParent.setCode(songTag.getCode());
-                codeNameParent.setName(songTag.getTagName());
-                codeNameParent.setParentCode(0);
-                codeNameParent.setParentName("");
-                tagCodeNames.add(codeNameParent);
             }
         }
         vodSong.setTag(tagCodeNames);
@@ -582,6 +578,15 @@ public class MigrateMySQL2MongoSongService extends MigrateBase {
     private boolean isContainName(List<CodeNameParent> codeNames, String name) {
         for (CodeName codeName : codeNames) {
             if (codeName.getName().equals(name)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isContainTagName(List<TagSimple> codeNames, String name) {
+        for (TagSimple codeName : codeNames) {
+            if (codeName.getTagName().equals(name)) {
                 return true;
             }
         }

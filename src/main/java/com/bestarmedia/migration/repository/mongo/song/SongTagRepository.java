@@ -34,23 +34,23 @@ public class SongTagRepository {
         return songMongoTemplate.findOne(new Query(Criteria.where("tagName").is(name)), SongTag.class);
     }
 
-    public SongTag insert(String tagName, String songName, String singer) {
-        Query query = new Query();
-        query.with(Sort.by(Sort.Direction.DESC, "code"));
-        SongTag songTag = songMongoTemplate.findOne(query, SongTag.class);
-        int code = 1;
-        if (songTag != null) {
-            code = songTag.getCode() + 1;
-        }
-        SongTag insert = new SongTag(code, tagName, 1, 1, 0, "从歌曲信息：" + songName + "-" + singer + " 导入");
-        insert.setCreatedAt(new Date());
-        insert.setUpdatedAt(new Date());
-        insert.setCreateUser(0);
-        insert.setUpdateUser(0);
-        return songMongoTemplate.insert(insert);
-    }
+//    public SongTag insert(String tagName, String songName, String singer) {
+//        Query query = new Query();
+//        query.with(Sort.by(Sort.Direction.DESC, "code"));
+//        SongTag songTag = songMongoTemplate.findOne(query, SongTag.class);
+//        int code = 1;
+//        if (songTag != null) {
+//            code = songTag.getCode() + 1;
+//        }
+//        SongTag insert = new SongTag(code, tagName, 0, "", 1, 0, "从歌曲信息：" + songName + "-" + singer + " 导入");
+//        insert.setCreatedAt(new Date());
+//        insert.setUpdatedAt(new Date());
+//        insert.setCreateUser(0);
+//        insert.setUpdateUser(0);
+//        return songMongoTemplate.insert(insert);
+//    }
 
-    private SongTag insert(SongTag songTag) {
+    public SongTag insert(SongTag songTag) {
         return songMongoTemplate.insert(songTag);
     }
 

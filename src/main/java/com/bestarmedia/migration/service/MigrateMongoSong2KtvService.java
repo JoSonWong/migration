@@ -472,6 +472,7 @@ public class MigrateMongoSong2KtvService extends MigrateBase {
                             version.setSinger(v.getSinger());
                             version.setType(v.getType());
                             version.setVersionsType(v.getVersionsType());
+                            version.setVersionsName(v.getType() == 2 ? "音画" : v.getVersionsName());
                             version.setSource(v.getSource());
                             version.setAlbum(v.getAlbum());
                             version.setIncreaseHot(v.getIncreaseHot());
@@ -484,7 +485,7 @@ public class MigrateMongoSong2KtvService extends MigrateBase {
                             version.setUpdatedAt(item.getUpdatedAt());
                             KtvSongVersion save = ktvSongVersionRepository.insert(version);
 
-                            versionSimples.add(new KtvVersionSimple(save.getCode(), save.getType(), save.getVersionsType(), save.getVersionHotSum(),
+                            versionSimples.add(new KtvVersionSimple(save.getCode(), save.getType(), save.getVersionsType(), save.getVersionsName(), save.getVersionHotSum(),
                                     save.getRecommend(), save.getStatus(), fileSimples.get(0)));
 
                             addVersionCount.getAndIncrement();

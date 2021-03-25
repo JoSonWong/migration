@@ -20,6 +20,9 @@ public class KtvVersionSimple {
     @Field(value = "versions_type")
     private int versionsType;//关联版本表（视频-MV，视频-重制，音画-MV ...）
 
+    @Field(value = "versions_name")
+    private String versionsName;//自定义名称
+
     @Indexed
     @Field(value = "versions_hot_sum")
     private long versionHotSum;//显示热度

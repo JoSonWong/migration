@@ -2,6 +2,7 @@ package com.bestarmedia.migration.model.mongo.song;
 
 import com.bestarmedia.migration.model.mongo.CodeNameParent;
 import com.bestarmedia.migration.model.mongo.MaterialVideoDTO;
+import com.bestarmedia.migration.model.mongo.TagSimple;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -43,7 +44,7 @@ public class SongMaterial extends SongAuditing {
     private List<MaterialVideoDTO> video;
 
     @Field(value = "tag")
-    private List<CodeNameParent> tag;
+    private List<TagSimple> tag;
 
     @Field(value = "remark")
     private String remark;

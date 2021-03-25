@@ -4,6 +4,7 @@ package com.bestarmedia.migration.model.mongo.ktv;
 import com.bestarmedia.migration.model.mongo.Auditing;
 import com.bestarmedia.migration.model.mongo.CodeName;
 import com.bestarmedia.migration.model.mongo.CodeNameParent;
+import com.bestarmedia.migration.model.mongo.TagSimple;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -50,7 +51,7 @@ public class KtvSong extends Auditing {
     private CodeName language;//语种
 
     @Field(value = "tag")
-    private List<CodeNameParent> tag;//标签
+    private List<TagSimple> tag;//标签
 
     @Field(value = "hot")
     private long hot;//真实热度

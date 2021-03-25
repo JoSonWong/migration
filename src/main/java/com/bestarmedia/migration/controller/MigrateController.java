@@ -2,10 +2,7 @@ package com.bestarmedia.migration.controller;
 
 import com.bestarmedia.migration.misc.JsonResponse;
 import com.bestarmedia.migration.misc.JsonResponseHandler;
-import com.bestarmedia.migration.service.Migrate2MongoSongAndHandlerDataService;
-import com.bestarmedia.migration.service.MigrateMongoSong2KtvService;
-import com.bestarmedia.migration.service.MigrateMongoSong2VodService;
-import com.bestarmedia.migration.service.MigrateMySQL2MongoSongService;
+import com.bestarmedia.migration.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -21,16 +18,19 @@ public class MigrateController {
     private final Migrate2MongoSongAndHandlerDataService migrate2MongoSongAndHandlerDataService;
     private final MigrateMongoSong2VodService migrateMongoSong2VodService;
     private final MigrateMongoSong2KtvService migrateMongoSong2KtvService;
+    private final MigrateMySQL2MongoKtvService migrateMySQL2MongoKtvService;
 
     @Autowired
     public MigrateController(Migrate2MongoSongAndHandlerDataService migrate2MongoSongAndHandlerDataService,
                              MigrateMongoSong2VodService migrateMongoSong2VodService,
                              MigrateMySQL2MongoSongService migrateMySQL2MongoSongService,
-                             MigrateMongoSong2KtvService migrateMongoSong2KtvService) {
+                             MigrateMongoSong2KtvService migrateMongoSong2KtvService,
+                             MigrateMySQL2MongoKtvService migrateMySQL2MongoKtvService) {
         this.migrate2MongoSongAndHandlerDataService = migrate2MongoSongAndHandlerDataService;
         this.migrateMongoSong2VodService = migrateMongoSong2VodService;
         this.migrateMySQL2MongoSongService = migrateMySQL2MongoSongService;
         this.migrateMongoSong2KtvService = migrateMongoSong2KtvService;
+        this.migrateMySQL2MongoKtvService = migrateMySQL2MongoKtvService;
     }
 
     @GetMapping("/v7.0/migration/mysql-to-mongo/{typeFormats}")
@@ -148,10 +148,28 @@ public class MigrateController {
     public JsonResponse fillFilePath(@RequestParam(value = "from", defaultValue = "0") Integer from,
                                      @RequestParam(value = "to", defaultValue = "0") Integer to) {
         HashMap<String, String> map = new HashMap<>();
-//        map.put("original", migrateMySQL2MongoSongService.replaceOriginalFilePath(from, to, "mp3_original.xlsx"));
-//        map.put("original_1", migrateMySQL2MongoSongService.replaceOriginalFilePath(from, to, "mp3_1_original.xlsx"));
-//        map.put("accompany", migrateMySQL2MongoSongService.replaceAccompanimentFilePath(from, to, "mp3_accompany.xlsx"));
+        map.put("original", migrateMySQL2MongoSongService.replaceOriginalFilePath(from, to, "mp3_original.xlsx"));
+        map.put("original_1", migrateMySQL2MongoSongService.replaceOriginalFilePath(from, to, "mp3_1_original.xlsx"));
+        map.put("accompany", migrateMySQL2MongoSongService.replaceAccompanimentFilePath(from, to, "mp3_accompany.xlsx"));
         map.put("accompany_1", migrateMySQL2MongoSongService.replaceAccompanimentFilePath(from, to, "mp3_1_accompany.xlsx"));
+        map.put("lyric", migrateMySQL2MongoSongService.replaceLyricFilePath(from, to, "mp3_lyric.xlsx"));
+        map.put("lyric_1", migrateMySQL2MongoSongService.replaceLyricFilePath(from, to, "mp3_1_lyric.xlsx"));
+        return JsonResponseHandler.success(map);
+    }
+
+    @GetMapping("/v7.0/migration/fill-lyric-file-path-to-mongo-song")
+    public JsonResponse fillLyricPath(@RequestParam(value = "from", defaultValue = "0") Integer from,
+                                      @RequestParam(value = "to", defaultValue = "0") Integer to) {
+        HashMap<String, String> map = new HashMap<>();
+        map.put("lyric", migrateMySQL2MongoSongService.replaceLyricFilePath(from, to, "mp3_lyric.xlsx"));
+        map.put("lyric_1", migrateMySQL2MongoSongService.replaceLyricFilePath(from, to, "mp3_1_lyric.xlsx"));
+        return JsonResponseHandler.success(map);
+    }
+
+    @GetMapping("/v7.0/migration/mysql-song-list-to-mongo-ktv")
+    public JsonResponse migrateSongList() {
+        HashMap<String, String> map = new HashMap<>();
+        map.put("tip", migrateMySQL2MongoKtvService.migrate());
         return JsonResponseHandler.success(map);
     }
 }

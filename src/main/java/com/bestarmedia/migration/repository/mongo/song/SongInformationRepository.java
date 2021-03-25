@@ -1,6 +1,7 @@
 package com.bestarmedia.migration.repository.mongo.song;
 
 
+import com.bestarmedia.migration.model.mongo.TagSimple;
 import com.bestarmedia.migration.model.mongo.song.SongInformation;
 import com.bestarmedia.migration.model.mongo.song.SongInformationSimple;
 import com.mongodb.client.result.DeleteResult;
@@ -148,6 +149,16 @@ public class SongInformationRepository {
         songMongoTemplate.remove(query, SongInformation.class);
         return songMongoTemplate.insert(song);
 
+    }
+
+
+    public long updateTag(int code, List<TagSimple> tag) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("code").is(code));
+        Update update = new Update();
+        update.set("tag", tag);
+        UpdateResult updateResult = songMongoTemplate.updateFirst(query, update, SongInformation.class);
+        return updateResult.getMatchedCount();       //返回执行的条
     }
 
 }

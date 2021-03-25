@@ -38,6 +38,9 @@ public class KtvSongVersion extends Auditing {
     @Field(value = "versions_type")
     private int versionsType;//关联版本表（视频-MV，视频-重制，音画-MV ...）
 
+    @Field(value = "versions_name")
+    private String versionsName;//自定义名称
+
     @Field(value = "source")
     private String source;//来源
 

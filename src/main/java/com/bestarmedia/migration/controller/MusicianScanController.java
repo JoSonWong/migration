@@ -55,4 +55,13 @@ public class MusicianScanController {
         return JsonResponseHandler.success(map);
     }
 
+
+    @GetMapping("/v7.0/migration/handle-tag")
+    public JsonResponse handleTag() {
+        HashMap<String, Integer> map = new HashMap<>();
+        mongoSongMusicianCleanerService.handleTag();
+        map.put("tag", 1);
+        return JsonResponseHandler.success(map);
+    }
+
 }

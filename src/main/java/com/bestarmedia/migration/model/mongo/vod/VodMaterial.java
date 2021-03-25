@@ -3,6 +3,7 @@ package com.bestarmedia.migration.model.mongo.vod;
 import com.bestarmedia.migration.model.mongo.Auditing;
 import com.bestarmedia.migration.model.mongo.CodeNameParent;
 import com.bestarmedia.migration.model.mongo.MaterialVideoDTO;
+import com.bestarmedia.migration.model.mongo.TagSimple;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -44,7 +45,7 @@ public class VodMaterial extends Auditing {
     private List<MaterialVideoDTO> video;
 
     @Field(value = "tag")
-    private List<CodeNameParent> tag;
+    private List<TagSimple> tag;
 
     @Field(value = "remark")
     private String remark;

@@ -1,12 +1,15 @@
 package com.bestarmedia.migration.repository.mongo.song;
 
+import com.bestarmedia.migration.model.mongo.TagSimple;
 import com.bestarmedia.migration.model.mongo.song.SongMaterial;
 import com.mongodb.client.result.DeleteResult;
+import com.mongodb.client.result.UpdateResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -36,4 +39,12 @@ public class SongMaterialRepository {
         return songMongoTemplate.findAll(SongMaterial.class);
     }
 
+    public long updateTag(int code, List<TagSimple> tag) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("code").is(code));
+        Update update = new Update();
+        update.set("tag", tag);
+        UpdateResult updateResult = songMongoTemplate.updateFirst(query, update, SongMaterial.class);
+        return updateResult.getMatchedCount();       //返回执行的条
+    }
 }
