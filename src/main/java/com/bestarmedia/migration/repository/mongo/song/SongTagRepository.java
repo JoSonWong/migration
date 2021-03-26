@@ -31,7 +31,7 @@ public class SongTagRepository {
     }
 
     public SongTag findByName(String name) {
-        return songMongoTemplate.findOne(new Query(Criteria.where("tagName").is(name)), SongTag.class);
+        return songMongoTemplate.findOne(new Query(Criteria.where("tagName").is(name)).with(Sort.by(Sort.Direction.DESC, "code")), SongTag.class);
     }
 
 //    public SongTag insert(String tagName, String songName, String singer) {

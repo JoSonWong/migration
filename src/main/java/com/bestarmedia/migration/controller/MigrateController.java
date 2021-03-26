@@ -172,4 +172,22 @@ public class MigrateController {
         map.put("tip", migrateMySQL2MongoKtvService.migrate());
         return JsonResponseHandler.success(map);
     }
+
+
+    @GetMapping("/v7.0/migration/fill-tag-to-song")
+    public JsonResponse fillTag(@RequestParam(value = "from", defaultValue = "0") Integer from,
+                                @RequestParam(value = "to", defaultValue = "0") Integer to) {
+        HashMap<String, String> map = new HashMap<>();
+        map.put("tip", migrateMySQL2MongoSongService.fillTag(from, to, "tag_top_3000.xlsx"));
+        return JsonResponseHandler.success(map);
+    }
+
+
+    @GetMapping("/v7.0/migration/fill-tag-to-ktv")
+    public JsonResponse fillTag2KTV(@RequestParam(value = "from", defaultValue = "0") Integer from,
+                                    @RequestParam(value = "to", defaultValue = "0") Integer to) {
+        HashMap<String, String> map = new HashMap<>();
+        map.put("tip", migrateMongoSong2KtvService.fillTag(from, to, "tag_top_3000.xlsx"));
+        return JsonResponseHandler.success(map);
+    }
 }

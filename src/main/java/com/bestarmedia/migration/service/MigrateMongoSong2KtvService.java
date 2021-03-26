@@ -4,18 +4,21 @@ package com.bestarmedia.migration.service;
 import com.bestarmedia.migration.misc.CommonUtil;
 import com.bestarmedia.migration.misc.DateUtil;
 import com.bestarmedia.migration.model.mongo.MaterialVideoDTO;
+import com.bestarmedia.migration.model.mongo.TagSimple;
 import com.bestarmedia.migration.model.mongo.VideoFile;
 import com.bestarmedia.migration.model.mongo.ktv.*;
 import com.bestarmedia.migration.model.mongo.song.*;
 import com.bestarmedia.migration.repository.mongo.ktv.*;
 import com.bestarmedia.migration.repository.mongo.song.*;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 @Service
 @Slf4j
@@ -502,4 +505,55 @@ public class MigrateMongoSong2KtvService extends MigrateBase {
         return addSongCount.get();
     }
 
+
+    public String fillTag(Integer indexFrom, Integer indexTo, String excelFile) {
+        AtomicLong updatedCount = new AtomicLong(0);
+        long time = System.currentTimeMillis();
+        XSSFSheet sheet;
+        try {
+            sheet = FillDataService.readExcel(excelFile);
+            int size = sheet.getPhysicalNumberOfRows();
+            int from = 1;
+            if (indexFrom > 0) {
+                from = indexFrom;
+            }
+            if (indexTo > 0) {
+                size = indexTo;
+            }
+            //循环取每行的数据
+            for (int row = from; row < size; row++) {
+                String songCode = FillDataService.getString(sheet.getRow(row).getCell(0));
+                String col5 = FillDataService.getString(sheet.getRow(row).getCell(5));
+                if (!StringUtils.isEmpty(col5)) {
+                    String tagStr = CommonUtil.deleteSpecialChar(col5);
+                    System.out.println("第" + row + "行，songCode：" + songCode + " tag：" + tagStr);
+                    List<TagSimple> tagSimples = findTags(tagStr);
+                    ktvSongRepository.updateTag(Integer.valueOf(songCode), tagSimples);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "更新标签数量：" + updatedCount.get() + " 耗时：" + (System.currentTimeMillis() - time) + "秒";
+    }
+
+
+    private List<TagSimple> findTags(String tagStr) {
+        List<TagSimple> tagCodeNames = new ArrayList<>();
+        if (!StringUtils.isEmpty(tagStr)) {
+            String[] tags = tagStr.split("\\|");
+            for (String tag : tags) {
+                SongTag songTag = songTagRepository.findByName(tag);
+                if (songTag != null) {
+                    TagSimple codeNameParent = new TagSimple();
+                    codeNameParent.setTagCode(songTag.getCode());
+                    codeNameParent.setTagName(songTag.getTagName());
+                    codeNameParent.setParentCode(songTag.getParentCode());
+                    codeNameParent.setParentName(songTag.getParentName());
+                    tagCodeNames.add(codeNameParent);
+                }
+            }
+        }
+        return tagCodeNames;
+    }
 }

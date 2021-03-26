@@ -544,22 +544,8 @@ public class MigrateMySQL2MongoSongService extends MigrateBase {
         vodSong.setSongType(createSongType(item));
 
         vodSong.setLanguage(new CodeName(item.getLanguage().getId(), item.getLanguage().getLanguageName()));
-        List<TagSimple> tagCodeNames = new ArrayList<>();
-        if (!StringUtils.isEmpty(item.getLyricFileMd5())) {
-            String[] tags = item.getLyricFileMd5().split("\\|");
-            for (String tag : tags) {
-                SongTag songTag = songTagRepository.findByName(tag);
-                if (songTag != null) {
-                    TagSimple codeNameParent = new TagSimple();
-                    codeNameParent.setTagCode(songTag.getCode());
-                    codeNameParent.setTagName(songTag.getTagName());
-                    codeNameParent.setParentCode(songTag.getParentCode());
-                    codeNameParent.setParentName(songTag.getParentName());
-                    tagCodeNames.add(codeNameParent);
-                }
-            }
-        }
-        vodSong.setTag(tagCodeNames);
+
+        vodSong.setTag(findTags(item.getLyricFileMd5()));
 
         vodSong.setRecommend(item.getSofthard());
         vodSong.setHot(0L);
@@ -573,6 +559,25 @@ public class MigrateMySQL2MongoSongService extends MigrateBase {
         vodSong.setCreateUser(item.getCreateUser());
         vodSong.setUpdateUser(item.getUpdateUser());
         return songInformationRepository.insert(vodSong);
+    }
+
+    private List<TagSimple> findTags(String tagStr) {
+        List<TagSimple> tagCodeNames = new ArrayList<>();
+        if (!StringUtils.isEmpty(tagStr)) {
+            String[] tags = tagStr.split("\\|");
+            for (String tag : tags) {
+                SongTag songTag = songTagRepository.findByName(tag);
+                if (songTag != null) {
+                    TagSimple codeNameParent = new TagSimple();
+                    codeNameParent.setTagCode(songTag.getCode());
+                    codeNameParent.setTagName(songTag.getTagName());
+                    codeNameParent.setParentCode(songTag.getParentCode());
+                    codeNameParent.setParentName(songTag.getParentName());
+                    tagCodeNames.add(codeNameParent);
+                }
+            }
+        }
+        return tagCodeNames;
     }
 
     private boolean isContainName(List<CodeNameParent> codeNames, String name) {
@@ -1060,4 +1065,36 @@ public class MigrateMySQL2MongoSongService extends MigrateBase {
         return "纯音频迁移为音画版，数量：" + count.get() + " 耗时：" + (System.currentTimeMillis() - cur) / 1000 + "秒";
     }
 
+
+    public String fillTag(Integer indexFrom, Integer indexTo, String excelFile) {
+        AtomicLong updatedCount = new AtomicLong(0);
+        long time = System.currentTimeMillis();
+        XSSFSheet sheet;
+        try {
+            sheet = FillDataService.readExcel(excelFile);
+            int size = sheet.getPhysicalNumberOfRows();
+            int from = 1;
+            if (indexFrom > 0) {
+                from = indexFrom;
+            }
+            if (indexTo > 0) {
+                size = indexTo;
+            }
+            //循环取每行的数据
+            for (int row = from; row < size; row++) {
+                String songCode = FillDataService.getString(sheet.getRow(row).getCell(0));
+                String col5 = FillDataService.getString(sheet.getRow(row).getCell(5));
+                if (!StringUtils.isEmpty(col5)) {
+                    String tagStr = CommonUtil.deleteSpecialChar(col5);
+                    System.out.println("第" + row + "行，songCode：" + songCode + " tag：" + tagStr);
+                    List<TagSimple> tagSimples = findTags(tagStr);
+
+                    songInformationRepository.updateTag(Integer.valueOf(songCode), tagSimples);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "更新标签数量：" + updatedCount.get() + " 耗时：" + (System.currentTimeMillis() - time) + "秒";
+    }
 }
