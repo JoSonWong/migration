@@ -556,4 +556,37 @@ public class MigrateMongoSong2KtvService extends MigrateBase {
         }
         return tagCodeNames;
     }
+
+
+    public String replaceLyricFilePath(Integer indexFrom, Integer indexTo, String excelFile) {
+        AtomicLong updatedCount = new AtomicLong(0);
+        long time = System.currentTimeMillis();
+        String oldExcelFile = excelFile.replace("_lyric", "");
+        XSSFSheet sheet;
+        try {
+            sheet = FillDataService.readExcel(excelFile);
+            int size = sheet.getPhysicalNumberOfRows();
+            int from = 1;
+            if (indexFrom > 0) {
+                from = indexFrom;
+            }
+            if (indexTo > 0) {
+                size = indexTo;
+            }
+            //循环取每行的数据
+            for (int row = from; row < size; row++) {
+                String fileName = FillDataService.getString(sheet.getRow(row).getCell(1));//本地文件名字
+                String filePath = FillDataService.getString(sheet.getRow(row).getCell(3));//本地文件名字
+                int excelLine = Integer.valueOf(fileName.substring(0, fileName.indexOf("_")));
+                String remark = oldExcelFile + "_" + (excelLine);
+                filePath = filePath.replace("http://mt.beidousat.com/song/", "https://song-enterprise.oss-cn-shenzhen.aliyuncs.com/song/");
+                System.out.println("第" + row + "行，本地文件名字：" + fileName + " 对应原excel行：" + remark + " 歌词文件：" + filePath);
+                long count = ktvSongVersionRepository.updateLyricFile(remark, filePath);
+                updatedCount.set(updatedCount.get() + count);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "更新歌词文件地址数量：" + updatedCount.get() + " 耗时：" + (System.currentTimeMillis() - time) + "秒";
+    }
 }

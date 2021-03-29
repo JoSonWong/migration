@@ -162,7 +162,7 @@ public class MigrateController {
                                       @RequestParam(value = "to", defaultValue = "0") Integer to) {
         HashMap<String, String> map = new HashMap<>();
         map.put("lyric", migrateMySQL2MongoSongService.replaceLyricFilePath(from, to, "mp3_lyric.xlsx"));
-        map.put("lyric_1", migrateMySQL2MongoSongService.replaceLyricFilePath(from, to, "mp3_1_lyric.xlsx"));
+//        map.put("lyric_1", migrateMySQL2MongoSongService.replaceLyricFilePath(from, to, "mp3_1_lyric.xlsx"));
         return JsonResponseHandler.success(map);
     }
 
@@ -188,6 +188,15 @@ public class MigrateController {
                                     @RequestParam(value = "to", defaultValue = "0") Integer to) {
         HashMap<String, String> map = new HashMap<>();
         map.put("tip", migrateMongoSong2KtvService.fillTag(from, to, "tag_top_3000.xlsx"));
+        return JsonResponseHandler.success(map);
+    }
+
+
+    @GetMapping("/v7.0/migration/fill-lyric-to-ktv")
+    public JsonResponse fillLyric2KTV(@RequestParam(value = "from", defaultValue = "0") Integer from,
+                                    @RequestParam(value = "to", defaultValue = "0") Integer to) {
+        HashMap<String, String> map = new HashMap<>();
+        map.put("lyric", migrateMongoSong2KtvService.replaceLyricFilePath(from, to, "mp3_lyric.xlsx"));
         return JsonResponseHandler.success(map);
     }
 }
