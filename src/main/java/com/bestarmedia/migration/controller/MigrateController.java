@@ -178,7 +178,8 @@ public class MigrateController {
     public JsonResponse fillTag(@RequestParam(value = "from", defaultValue = "0") Integer from,
                                 @RequestParam(value = "to", defaultValue = "0") Integer to) {
         HashMap<String, String> map = new HashMap<>();
-        map.put("tip", migrateMySQL2MongoSongService.fillTag(from, to, "tag_top_3000.xlsx"));
+//        map.put("tip", migrateMySQL2MongoSongService.fillTag(from, to, "tag_top_3000.xlsx"));
+        map.put("tip", migrateMySQL2MongoSongService.fillTag(from, to, "tag_top_8000.xlsx"));
         return JsonResponseHandler.success(map);
     }
 
@@ -187,16 +188,41 @@ public class MigrateController {
     public JsonResponse fillTag2KTV(@RequestParam(value = "from", defaultValue = "0") Integer from,
                                     @RequestParam(value = "to", defaultValue = "0") Integer to) {
         HashMap<String, String> map = new HashMap<>();
-        map.put("tip", migrateMongoSong2KtvService.fillTag(from, to, "tag_top_3000.xlsx"));
+//        map.put("tip", migrateMongoSong2KtvService.fillTag(from, to, "tag_top_3000.xlsx"));
+        map.put("tip", migrateMongoSong2KtvService.fillTag(from, to, "tag_top_8000.xlsx"));
         return JsonResponseHandler.success(map);
     }
 
 
     @GetMapping("/v7.0/migration/fill-lyric-to-ktv")
     public JsonResponse fillLyric2KTV(@RequestParam(value = "from", defaultValue = "0") Integer from,
-                                    @RequestParam(value = "to", defaultValue = "0") Integer to) {
+                                      @RequestParam(value = "to", defaultValue = "0") Integer to) {
         HashMap<String, String> map = new HashMap<>();
         map.put("lyric", migrateMongoSong2KtvService.replaceLyricFilePath(from, to, "mp3_lyric.xlsx"));
+        return JsonResponseHandler.success(map);
+    }
+
+
+    @GetMapping("/v7.0/migration/fill-singer-img-to-song")
+    public JsonResponse fillSingerImg2Song(@RequestParam(value = "from", defaultValue = "0") Integer from,
+                                           @RequestParam(value = "to", defaultValue = "0") Integer to) {
+        HashMap<String, String> map = new HashMap<>();
+        long cleanCount = migrateMongoSong2KtvService.cleanSingerImage();
+        System.out.println("清除歌星图片素材数量：" + cleanCount);
+        map.put("img", migrateMongoSong2KtvService.importSingerImage(from, to, "singer_0.xlsx"));
+        map.put("img2", migrateMongoSong2KtvService.importSingerImage(from, to, "singer_1.xlsx"));
+        return JsonResponseHandler.success(map);
+    }
+
+
+    @GetMapping("/v7.0/migration/fill-singer-img-to-ktv")
+    public JsonResponse fillSingerImg2Ktv(@RequestParam(value = "from", defaultValue = "0") Integer from,
+                                          @RequestParam(value = "to", defaultValue = "0") Integer to) {
+        HashMap<String, String> map = new HashMap<>();
+        long cleanCount = migrateMongoSong2KtvService.cleanKtvSingerImage();
+        System.out.println("清除歌星图片素材数量：" + cleanCount);
+        map.put("img", migrateMongoSong2KtvService.importSingerImage2KTV(from, to, "singer_0.xlsx"));
+        map.put("img2", migrateMongoSong2KtvService.importSingerImage2KTV(from, to, "singer_1.xlsx"));
         return JsonResponseHandler.success(map);
     }
 }

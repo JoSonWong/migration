@@ -30,6 +30,10 @@ public class SongMusicianRepository {
         return songMongoTemplate.findOne(new Query(Criteria.where("musician_name").is(name)), SongMusician.class);
     }
 
+    public SongMusician findSingerByCode(int code) {
+        return songMongoTemplate.findOne(new Query(Criteria.where("code").is(code)), SongMusician.class);
+    }
+
     public long removeByCode(Integer code) {
         return songMongoTemplate.remove(new Query(Criteria.where("code").is(code)), SongMusician.class).getDeletedCount();
     }

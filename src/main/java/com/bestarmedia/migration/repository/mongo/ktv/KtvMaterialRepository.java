@@ -4,6 +4,7 @@ import com.bestarmedia.migration.model.mongo.ktv.KtvMaterial;
 import com.mongodb.client.result.DeleteResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -34,6 +35,23 @@ public class KtvMaterialRepository {
 
     public List<KtvMaterial> findAll() {
         return ktvMongoTemplate.findAll(KtvMaterial.class);
+    }
+
+
+    public long cleanAllSingerImageData() {
+        return ktvMongoTemplate.remove(new Query(Criteria.where("type").is(1)), KtvMaterial.class).getDeletedCount();
+    }
+
+    public int createNewCode() {
+        Query query = new Query();
+        query.with(Sort.by(Sort.Direction.DESC, "code")).limit(1);
+        KtvMaterial songUgc = ktvMongoTemplate.findOne(query, KtvMaterial.class);
+        return songUgc == null ? 1 : songUgc.getCode() + 1;
+    }
+
+    public KtvMaterial create(KtvMaterial songMaterial) {
+        songMaterial.setCode(createNewCode());
+        return ktvMongoTemplate.insert(songMaterial);
     }
 
 }

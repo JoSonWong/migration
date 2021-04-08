@@ -589,4 +589,121 @@ public class MigrateMongoSong2KtvService extends MigrateBase {
         }
         return "更新歌词文件地址数量：" + updatedCount.get() + " 耗时：" + (System.currentTimeMillis() - time) + "秒";
     }
+
+    public long cleanSingerImage() {
+        return songMaterialRepository.cleanAllSingerImageData();
+    }
+
+    public String importSingerImage(Integer indexFrom, Integer indexTo, String excelFile) {
+        AtomicLong updatedCount = new AtomicLong(0);
+        long time = System.currentTimeMillis();
+        XSSFSheet sheet;
+        try {
+            sheet = FillDataService.readExcel(excelFile);
+            int size = sheet.getPhysicalNumberOfRows();
+            int from = 1;
+            if (indexFrom > 0) {
+                from = indexFrom;
+            }
+            if (indexTo > 0) {
+                size = indexTo;
+            }
+            //循环取每行的数据
+            for (int row = from; row < size; row++) {
+                String fileName = FillDataService.getString(sheet.getRow(row).getCell(1));//本地文件名字
+                int indexOf = fileName.indexOf("_");
+                int singerCode = Integer.valueOf(fileName.substring(0, indexOf));
+                SongMusician musician = songMusicianRepository.findSingerByCode(singerCode);
+                if (musician != null) {
+                    SongMaterial songMaterial = new SongMaterial();
+                    songMaterial.setMaterialName(fileName);
+                    songMaterial.setMusicianCode(singerCode);
+                    songMaterial.setStatus(1);
+                    songMaterial.setType(1);
+                    int sort = 1;
+                    if (fileName.contains("_S")) {
+                        sort = 4;
+                    } else if (fileName.contains("_A")) {
+                        sort = 3;
+                    } else if (fileName.contains("_B")) {
+                        sort = 2;
+                    } else if (fileName.contains("_C")) {
+                        sort = 1;
+                    }
+                    songMaterial.setSort(sort);
+
+                    String filePath = FillDataService.getString(sheet.getRow(row).getCell(3));//本地文件名字
+                    filePath = filePath.replace("http://mt.beidousat.com/song/", "https://song-enterprise.oss-cn-shenzhen.aliyuncs.com/song/");
+                    System.out.println("第" + row + "行，本地文件名字：" + fileName + " 图片：" + filePath);
+                    songMaterial.setImgFilePath(filePath);
+                    songMaterial.setRemark("数据来源：" + excelFile);
+                    songMaterial.setCreatedAt(new Date());
+                    songMaterial.setUpdatedAt(new Date());
+                    SongMaterial save = songMaterialRepository.insert(songMaterial);
+                    updatedCount.incrementAndGet();
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "导入歌星图片数量数量：" + updatedCount.get() + " 耗时：" + (System.currentTimeMillis() - time) + "秒";
+    }
+
+    public long cleanKtvSingerImage() {
+        return ktvMaterialRepository.cleanAllSingerImageData();
+    }
+
+    public String importSingerImage2KTV(Integer indexFrom, Integer indexTo, String excelFile) {
+        AtomicLong updatedCount = new AtomicLong(0);
+        long time = System.currentTimeMillis();
+        XSSFSheet sheet;
+        try {
+            sheet = FillDataService.readExcel(excelFile);
+            int size = sheet.getPhysicalNumberOfRows();
+            int from = 1;
+            if (indexFrom > 0) {
+                from = indexFrom;
+            }
+            if (indexTo > 0) {
+                size = indexTo;
+            }
+            //循环取每行的数据
+            for (int row = from; row < size; row++) {
+                String fileName = FillDataService.getString(sheet.getRow(row).getCell(1));//本地文件名字
+                int indexOf = fileName.indexOf("_");
+                int singerCode = Integer.valueOf(fileName.substring(0, indexOf));
+                KtvMaterial material = new KtvMaterial();
+                material.setMaterialName(fileName);
+                material.setMusicianCode(singerCode);
+                material.setStatus(1);
+                material.setType(1);
+                int sort = 1;
+                if (fileName.contains("_S")) {
+                    sort = 4;
+                } else if (fileName.contains("_A")) {
+                    sort = 3;
+                } else if (fileName.contains("_B")) {
+                    sort = 2;
+                } else if (fileName.contains("_C")) {
+                    sort = 1;
+                }
+                material.setSort(sort);
+                String filePath = FillDataService.getString(sheet.getRow(row).getCell(3));//本地文件名字
+                filePath = filePath.replace("http://mt.beidousat.com/song/", "https://song-enterprise.oss-cn-shenzhen.aliyuncs.com/song/");
+                System.out.println("第" + row + "行，本地文件名字：" + fileName + " 图片：" + filePath);
+                material.setImgFilePath(filePath);
+                material.setRemark("数据来源：" + excelFile);
+
+                material.setCreatedAt(new Date());
+                material.setUpdatedAt(new Date());
+
+                KtvMaterial save = ktvMaterialRepository.create(material);
+                updatedCount.incrementAndGet();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "导入歌星图片数量数量：" + updatedCount.get() + " 耗时：" + (System.currentTimeMillis() - time) + "秒";
+    }
+
 }
