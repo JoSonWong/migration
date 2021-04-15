@@ -1,11 +1,9 @@
 package com.bestarmedia.migration.model.mongo.ktv;
 
 
-import com.bestarmedia.migration.model.mongo.CodeNameParent;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
@@ -20,18 +18,30 @@ import java.util.Date;
 @Document(value = "ktv_tag")
 @AllArgsConstructor
 @NoArgsConstructor
-@EqualsAndHashCode(callSuper = true)
-public class KtvTag extends CodeNameParent {
+public class KtvTag {
 
     @Id
     @Field(value = "_id")
     private String _id;
 
-    @Field(value = "status")
-    private int status;
+    @Field(value = "code")
+    private Integer code;
+
+    @Field(value = "tag_name")
+    private String tagName;//标签名称
+
+
+    @Field(value = "parent_code")
+    private Integer parentCode;//组别
+
+    @Field(value = "parent_name")
+    private String parentName;//组别
 
     @Field(value = "sort")
-    private int sort;
+    private Integer sort;//排序
+
+    @Field(value = "status")
+    private Integer status;//状态 下架：0，上架：1
 
     @Field(value = "remark")
     private String remark;

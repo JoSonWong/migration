@@ -213,18 +213,19 @@ public class MigrateMongoSong2KtvService extends MigrateBase {
         return "素材迁移总数:" + atomicInteger.get() + " 耗时:" + (System.currentTimeMillis() - time) / 1000;
     }
 
-    private void mergeTag() {
+    public void mergeTag() {
         List<SongTag> songTags = songTagRepository.findAll();
         System.out.println("清除标签信息数量:" + ktvTagRepository.cleanAllData());
         songTags.forEach(item -> {
             try {
                 KtvTag tag = new KtvTag();
                 tag.setCode(item.getCode());
-                tag.setName(item.getTagName());
+                tag.setTagName(item.getTagName());
                 tag.setParentCode(item.getParentCode());
-                tag.setRemark(item.getRemark());
+                tag.setParentName(item.getParentName());
                 tag.setSort(item.getSort());
                 tag.setStatus(item.getStatus());
+                tag.setRemark(item.getRemark());
                 tag.setCreatedAt(item.getCreatedAt());
                 tag.setUpdatedAt(item.getUpdatedAt());
                 tag.setDeletedAt(item.getDeletedAt());

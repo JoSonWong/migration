@@ -106,6 +106,14 @@ public class MigrateController {
         return JsonResponseHandler.success(map);
     }
 
+    @GetMapping("/v7.0/migration/mongo-song-to-ktv-tag")
+    public JsonResponse toSong2KtvTag() {
+        migrateMongoSong2KtvService.mergeTag();
+        HashMap<String, String> map = new HashMap<>();
+        map.put("tip", "迁移标签成功");
+        return JsonResponseHandler.success(map);
+    }
+
     @GetMapping("/v7.0/migration/mongo-song-to-ktv/{typeFormats}/material")
     public JsonResponse materialToSong2Ktv(@PathVariable String typeFormats) {
         HashMap<String, String> map = new HashMap<>();
